@@ -1,0 +1,17 @@
+# Test connectivity
+GET http://localhost:3000/ping
+
+###
+# Test deposit command
+
+POST http://localhost:3000/deposit HTTP/1.1
+Content-Type: application/json
+
+{ 
+    "accountId": "acc-123", 
+    "amount": 100
+}
+
+###
+# Test balance query
+GET http://localhost:3000/balance/acc-123
