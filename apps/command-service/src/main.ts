@@ -16,4 +16,4 @@ async function bootstrap() {
   await app.listen();
   console.log('Command Service is listening on port 3001');
 }
-bootstrap();
+void bootstrap();

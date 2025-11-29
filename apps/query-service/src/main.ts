@@ -16,4 +16,4 @@ async function bootstrap() {
   await app.listen();
   console.log('Query Service is listening on port 3002');
 }
-bootstrap();
+void bootstrap();

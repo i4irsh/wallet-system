@@ -15,8 +15,10 @@ describe('ApiGatewayController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(apiGatewayController.getHello()).toBe('Hello World!');
+    it('should return "pong from command-service" and "pong from query-service"', async () => {
+      const result = await apiGatewayController.ping();
+      expect(result.commandService).toBe('pong from command-service');
+      expect(result.queryService).toBe('pong from query-service');
     });
   });
 });
