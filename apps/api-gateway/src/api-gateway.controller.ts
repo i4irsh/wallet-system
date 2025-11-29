@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Inject, Param, Post } from '@nestjs/common';
-import { ApiGatewayService } from './api-gateway.service';
+import { Controller, Get, Post, Body, Param, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
+import { DepositDto, WithdrawDto, TransferDto } from '@app/shared';
 
 @Controller()
 export class ApiGatewayController {
@@ -22,9 +22,23 @@ export class ApiGatewayController {
   }
 
   @Post('deposit')
-  async deposit(@Body() data: { walletId: string; amount: number }) {
+  async deposit(@Body() data: DepositDto) {
     return firstValueFrom(
       this.commandClient.send({ cmd: 'deposit' }, data),
+    );
+  }
+
+  @Post('withdraw')
+  async withdraw(@Body() data: WithdrawDto) {
+    return firstValueFrom(
+      this.commandClient.send({ cmd: 'withdraw' }, data),
+    );
+  }
+
+  @Post('transfer')
+  async transfer(@Body() data: TransferDto) {
+    return firstValueFrom(
+      this.commandClient.send({ cmd: 'transfer' }, data),
     );
   }
 

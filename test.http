@@ -4,12 +4,35 @@ GET http://localhost:3000/ping
 ###
 # Test deposit command
 
-POST http://localhost:3000/deposit HTTP/1.1
+POST http://localhost:3000/deposit
 Content-Type: application/json
 
 { 
     "walletId": "wallet-123", 
     "amount": 100
+}
+
+###
+# Test withdraw command
+
+POST http://localhost:3000/withdraw
+Content-Type: application/json
+
+{ 
+    "walletId": "wallet-123", 
+    "amount": 50
+}
+
+###
+# Test transfer command
+
+POST http://localhost:3000/transfer
+Content-Type: application/json
+
+{ 
+    "fromWalletId": "wallet-123", 
+    "toWalletId": "wallet-456", 
+    "amount": 25
 }
 
 ###
