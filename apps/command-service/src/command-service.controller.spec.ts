@@ -15,8 +15,8 @@ describe('CommandServiceController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(commandServiceController.getHello()).toBe('Hello World!');
+    it('should return "pong from command-service"', () => {
+      expect(commandServiceController.ping()).toBe('pong from command-service');
     });
   });
 });

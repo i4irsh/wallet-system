@@ -15,8 +15,8 @@ describe('QueryServiceController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(queryServiceController.getHello()).toBe('Hello World!');
+    it('should return "pong from query-service"', () => {
+      expect(queryServiceController.ping()).toBe('pong from query-service');
     });
   });
 });
