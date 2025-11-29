@@ -1,28 +1,27 @@
-import { CommandHandler, ICommandHandler, EventPublisher } from '@nestjs/cqrs';
+import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { DepositCommand } from '../commands';
-import { WalletAggregate } from '../aggregates/wallet.aggregate';
+import { WalletRepository } from '../repositories/wallet.repository';
 
 @CommandHandler(DepositCommand)
 export class DepositHandler implements ICommandHandler<DepositCommand> {
-  constructor(private readonly eventPublisher: EventPublisher) {}
+  constructor(private readonly walletRepository: WalletRepository) {}
 
-  async execute(command: DepositCommand): Promise<{ success: boolean; message: string }> {
+  async execute(command: DepositCommand): Promise<{ success: boolean; message: string; balance: number }> {
     const { walletId, amount } = command;
 
-    // Create or load aggregate (we'll add proper loading later with event sourcing)
-    const wallet = this.eventPublisher.mergeObjectContext(
-      new WalletAggregate(walletId),
-    );
+    // Load aggregate from event store (replays events)
+    const wallet = await this.walletRepository.findById(walletId);
 
     // Execute business logic
     wallet.deposit(amount);
 
-    // Commit events (publishes to event bus)
-    wallet.commit();
+    // Save events to event store
+    await this.walletRepository.save(wallet);
 
     return {
       success: true,
       message: `Deposited ${amount} to wallet ${walletId}`,
+      balance: wallet.getBalance(),
     };
   }
 }
