@@ -22,16 +22,16 @@ export class ApiGatewayController {
   }
 
   @Post('deposit')
-  async deposit(@Body() data: { accountId: string; amount: number }) {
+  async deposit(@Body() data: { walletId: string; amount: number }) {
     return firstValueFrom(
       this.commandClient.send({ cmd: 'deposit' }, data),
     );
   }
 
-  @Get('balance/:accountId')
-  async getBalance(@Param('accountId') accountId: string) {
+  @Get('balance/:walletId')
+  async getBalance(@Param('walletId') walletId: string) {
     return firstValueFrom(
-      this.queryClient.send({ cmd: 'get_balance' }, { accountId }),
+      this.queryClient.send({ cmd: 'get_balance' }, { walletId }),
     );
   }
 }

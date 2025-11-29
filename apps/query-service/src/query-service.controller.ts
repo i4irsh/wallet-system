@@ -12,9 +12,9 @@ export class QueryServiceController {
   }
 
   @MessagePattern({ cmd: 'get_balance' })
-  getBalance(@Payload() data: { accountId: string }) {
+  getBalance(@Payload() data: { walletId: string }) {
     console.log('Get balance query received:', data);
     // Mock response for now
-    return { accountId: data.accountId, balance: 1000 };
+    return { walletId: data.walletId, balance: 1000 };
   }
 }

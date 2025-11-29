@@ -12,8 +12,8 @@ export class CommandServiceController {
   }
 
   @MessagePattern({ cmd: 'deposit' })
-  deposit(@Payload() data: { accountId: string; amount: number }) {
+  deposit(@Payload() data: { walletId: string; amount: number }) {
     console.log('Deposit command received:', data);
-    return { success: true, message: `Deposited ${data.amount} to account ${data.accountId}` };
+    return { success: true, message: `Deposited ${data.amount} to wallet ${data.walletId}` };
   }
 }
