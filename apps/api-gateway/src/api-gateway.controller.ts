@@ -23,23 +23,17 @@ export class ApiGatewayController {
 
   @Post('deposit')
   async deposit(@Body() data: DepositDto) {
-    return firstValueFrom(
-      this.commandClient.send({ cmd: 'deposit' }, data),
-    );
+    return firstValueFrom(this.commandClient.send({ cmd: 'deposit' }, data));
   }
 
   @Post('withdraw')
   async withdraw(@Body() data: WithdrawDto) {
-    return firstValueFrom(
-      this.commandClient.send({ cmd: 'withdraw' }, data),
-    );
+    return firstValueFrom(this.commandClient.send({ cmd: 'withdraw' }, data));
   }
 
   @Post('transfer')
   async transfer(@Body() data: TransferDto) {
-    return firstValueFrom(
-      this.commandClient.send({ cmd: 'transfer' }, data),
-    );
+    return firstValueFrom(this.commandClient.send({ cmd: 'transfer' }, data));
   }
 
   @Get('balance/:walletId')

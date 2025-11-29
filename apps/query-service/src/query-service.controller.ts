@@ -13,8 +13,8 @@ export class QueryServiceController {
   getBalance(@Payload() data: { walletId: string }): IWallet {
     console.log('Get balance query received:', data);
     // Mock response for now
-    return { 
-      id: data.walletId, 
+    return {
+      id: data.walletId,
       balance: 1000,
       createdAt: new Date(),
       updatedAt: new Date(),
