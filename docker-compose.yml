@@ -1,16 +1,32 @@
 services:
-  postgres:
+  # Write Database (Event Store)
+  postgres-write:
     image: postgres:16-alpine
-    container_name: wallet-postgres
+    container_name: wallet-postgres-write
     environment:
       POSTGRES_USER: wallet_user
       POSTGRES_PASSWORD: wallet_password
-      POSTGRES_DB: wallet_db
+      POSTGRES_DB: wallet_write_db
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_write_data:/var/lib/postgresql/data
+      - ./init-write.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # Read Database (Projections)
+  postgres-read:
+    image: postgres:16-alpine
+    container_name: wallet-postgres-read
+    environment:
+      POSTGRES_USER: wallet_user
+      POSTGRES_PASSWORD: wallet_password
+      POSTGRES_DB: wallet_read_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_read_data:/var/lib/postgresql/data
+      - ./init-read.sql:/docker-entrypoint-initdb.d/init.sql
 
 volumes:
-  postgres_data:
+  postgres_write_data:
+  postgres_read_data:
