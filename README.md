@@ -11,85 +11,35 @@ An event-driven distributed Wallet Microservice built using **NestJS microservic
 - **Transfer** - Move funds between wallets
 - **Balance** - Query current wallet balance
 - **History** - View transaction history
-- **Auto-creation** - Wallets created automatically on first operation
 
 ---
 
-## Documentation
+## Technical Documentation
 
 - [DESIGN.md](./DESIGN.md) - Technical architecture, patterns, and implementation details
 
 ---
 
-## Architecture Overview
 
-```
-┌──────────┐      HTTP       ┌─────────────┐
-│  Client  │◄───────────────►│ API Gateway │ :3000
-└──────────┘                 └──────┬──────┘
-                                    │ TCP
-                    ┌───────────────┴───────────────┐
-                    ▼                               ▼
-           ┌────────────────┐  Events (TCP)  ┌─────────────────┐
-           │Command Service │───────────────►│  Query Service  │
-           │     :3001      │                │      :3002      │
-           └───────┬────────┘                └────────┬────────┘
-                   │                                  │
-                   ▼                                  ▼
-           ┌──────────────┐                  ┌──────────────────┐
-           │ Event Store  │                  │   Read Models    │
-           └──────┬───────┘                  └────────┬─────────┘
-                  │                                   │
-                  └─────────────┬─────────────────────┘
-                                ▼
-                          ┌──────────┐
-                          │ Postgres │ :5432
-                          └──────────┘
-```
+## Technology Stack
 
-| Service | Port | Responsibility |
-|---------|------|----------------|
-| API Gateway | 3000 | HTTP API, routes to internal services |
-| Command Service | 3001 | Handles writes (deposit, withdraw, transfer) |
-| Query Service | 3002 | Handles reads (balance, history) |
-| PostgreSQL | 5432 | Event store and read models |
+| Layer | Technology |
+|-------|------------|
+| Framework | NestJS |
+| Message Broker | RabbitMQ 3.13 |
+| Database | PostgreSQL 16 |
+| ORM | TypeORM |
+| CQRS | @nestjs/cqrs |
+| Language | TypeScript |
+| Container | Docker Compose |
 
----
-
-## Tech Stack
-
-- **NestJS** - Node.js framework
-- **@nestjs/cqrs** - CQRS module
-- **@nestjs/microservices** - Microservice communication (TCP)
-- **TypeORM** - Database ORM
-- **PostgreSQL** - Database
-- **Docker** - Infrastructure
-
----
-
-## Project Structure
-
-```
-wallet-system/
-├── apps/
-│   ├── api-gateway/        # HTTP API (port 3000)
-│   ├── command-service/    # Handles writes (port 3001)
-│   └── query-service/      # Handles reads (port 3002)
-├── libs/
-│   └── shared/             # Shared DTOs, events, entities
-├── docker-compose.yml
-├── init.sql
-└── README.md
-```
 
 ---
 
 ## Prerequisites
 
 - Node.js 18+
-- npm
 - Docker & Docker Compose
-- NestJS CLI (`npm install -g @nestjs/cli`)
 
 ---
 
@@ -99,7 +49,7 @@ wallet-system/
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/i4irsh/wallet-system.git
 cd wallet-system
 ```
 
@@ -116,27 +66,14 @@ docker-compose up -d
 ```
 
 This starts:
-- PostgreSQL on port 5432
-- Creates `event_store`, `wallet_read_model`, and `transaction_read_model` tables
+- PostgreSQL (Write) on port 5432 - Event store database
+- PostgreSQL (Read) on port 5433 - Read model projections database
+- RabbitMQ on port 5672 (AMQP) and 15672 (Management UI)
 
-### 4. Verify Database
+**RabbitMQ Management UI:**
+Open http://localhost:15672 (credentials: wallet_user / wallet_password)
 
-```bash
-docker exec -it wallet-postgres psql -U wallet_user -d wallet_db -c "\dt"
-```
-
-Expected output:
-```
-              List of relations
- Schema |          Name          | Type  |    Owner
---------+------------------------+-------+-------------
- public | event_store            | table | wallet_user
- public | snapshots              | table | wallet_user
- public | transaction_read_model | table | wallet_user
- public | wallet_read_model      | table | wallet_user
-```
-
-### 5. Start Services
+### 4. Start Services
 
 Open 3 terminal windows:
 
@@ -151,7 +88,7 @@ npm run start:dev query-service
 npm run start:dev api-gateway
 ```
 
-### 6. Verify Services
+### 5. Verify Services
 
 ```bash
 curl http://localhost:3000/wallet/ping
@@ -164,16 +101,16 @@ Expected output:
 
 ---
 
-## API Endpoints
+## API Reference
 
-| Method | Endpoint | Description | Body |
-|--------|----------|-------------|------|
-| GET | /wallet/ping | Health check | - |
-| POST | /wallet/deposit | Deposit money | `{ "walletId": "string", "amount": number }` |
-| POST | /wallet/withdraw | Withdraw money | `{ "walletId": "string", "amount": number }` |
-| POST | /wallet/transfer | Transfer money | `{ "fromWalletId": "string", "toWalletId": "string", "amount": number }` |
-| GET | /wallet/balance/:walletId | Get balance | - |
-| GET | /wallet/transactions/:walletId | Get history | - |
+| Method | Endpoint | Service | Description |
+|--------|----------|---------|-------------|
+| POST | `/deposit` | Command | Deposit funds to wallet |
+| POST | `/withdraw` | Command | Withdraw funds from wallet |
+| POST | `/transfer` | Command | Transfer between wallets |
+| GET | `/balance/:walletId` | Query | Get current wallet balance |
+| GET | `/transactions/:walletId` | Query | Get transaction history |
+| GET | `/ping` | Both | Health check both services |
 
 ---
 
@@ -207,11 +144,16 @@ curl http://localhost:3000/wallet/transactions/wallet-123
 ## Database Access
 
 ```bash
-# Connect to PostgreSQL
-docker exec -it wallet-postgres psql -U wallet_user -d wallet_db
+# Connect to Write Database (Event Store)
+docker exec -it wallet-postgres-write psql -U wallet_user -d wallet_write_db
 
 # View events
 SELECT * FROM event_store ORDER BY id;
+```
+
+```bash
+# Connect to Read Database (Projections)
+docker exec -it wallet-postgres-read psql -U wallet_user -d wallet_read_db
 
 # View wallet balances
 SELECT * FROM wallet_read_model;
@@ -227,9 +169,9 @@ SELECT * FROM transaction_read_model ORDER BY timestamp;
 ```bash
 # Stop services (Ctrl+C in each terminal)
 
-# Stop PostgreSQL
+# Stop infrastructure (PostgreSQL + RabbitMQ)
 docker-compose down
 
-# Stop and remove data
+# Stop and remove all data (databases + message queues)
 docker-compose down -v
 ```

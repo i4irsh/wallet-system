@@ -1,7 +1,12 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { EventStoreModule, EventStoreEntity } from '@app/shared';
+import { 
+  EventStoreModule, 
+  EventStoreEntity, 
+  RabbitMQModule, 
+  getRabbitMQConfig 
+} from '@app/shared';
 import { CommandServiceController } from './command-service.controller';
 import { CommandHandlers } from './handlers';
 import { WalletRepository } from './repositories/wallet.repository';
@@ -21,6 +26,7 @@ import { EventPublisherService } from './publishers/event.publisher';
       synchronize: false,
     }),
     EventStoreModule,
+    RabbitMQModule.forRoot(getRabbitMQConfig()),
   ],
   controllers: [CommandServiceController],
   providers: [...CommandHandlers, WalletRepository, EventPublisherService],

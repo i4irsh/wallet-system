@@ -1,60 +1,56 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { ClientProxy, ClientProxyFactory, Transport } from '@nestjs/microservices';
+import { Injectable, Logger } from '@nestjs/common';
+import { RabbitMQService, RABBITMQ_ROUTING_KEYS } from '@app/shared';
 
 @Injectable()
-export class EventPublisherService implements OnModuleInit {
-    private queryServiceClient: ClientProxy;
+export class EventPublisherService {
+  private readonly logger = new Logger(EventPublisherService.name);
 
-    onModuleInit() {
-        this.queryServiceClient = ClientProxyFactory.create({
-            transport: Transport.TCP,
-            options: {
-                host: 'localhost',
-                port: 3002,
-            },
-        });
-    }
+  constructor(private readonly rabbitMQService: RabbitMQService) {}
 
-    async publishEvent(eventType: string, eventData: any): Promise<void> {
-        try {
-            await this.queryServiceClient
-                .emit({ event: eventType }, eventData)
-                .toPromise();
-            console.log(`Published event: ${eventType}`, eventData);
-        } catch (error) {
-            console.error(`Failed to publish event: ${eventType}`, error);
-        }
-    }
+  async publishMoneyDeposited(data: {
+    walletId: string;
+    amount: number;
+    timestamp: Date;
+    transactionId: string;
+    balanceAfter: number;
+  }): Promise<void> {
+    await this.rabbitMQService.publish(RABBITMQ_ROUTING_KEYS.MONEY_DEPOSITED, {
+      eventType: 'MoneyDepositedEvent',
+      data,
+      publishedAt: new Date().toISOString(),
+    });
+    this.logger.log(`Published MoneyDepositedEvent for wallet ${data.walletId}`);
+  }
 
-    async publishMoneyDeposited(data: {
-        walletId: string;
-        amount: number;
-        timestamp: Date;
-        transactionId: string;
-        balanceAfter: number;
-    }): Promise<void> {
-        await this.publishEvent('MoneyDepositedEvent', data);
-    }
+  async publishMoneyWithdrawn(data: {
+    walletId: string;
+    amount: number;
+    timestamp: Date;
+    transactionId: string;
+    balanceAfter: number;
+  }): Promise<void> {
+    await this.rabbitMQService.publish(RABBITMQ_ROUTING_KEYS.MONEY_WITHDRAWN, {
+      eventType: 'MoneyWithdrawnEvent',
+      data,
+      publishedAt: new Date().toISOString(),
+    });
+    this.logger.log(`Published MoneyWithdrawnEvent for wallet ${data.walletId}`);
+  }
 
-    async publishMoneyWithdrawn(data: {
-        walletId: string;
-        amount: number;
-        timestamp: Date;
-        transactionId: string;
-        balanceAfter: number;
-    }): Promise<void> {
-        await this.publishEvent('MoneyWithdrawnEvent', data);
-    }
-
-    async publishMoneyTransferred(data: {
-        fromWalletId: string;
-        toWalletId: string;
-        amount: number;
-        timestamp: Date;
-        transactionId: string;
-        fromBalanceAfter: number;
-        toBalanceAfter: number;
-    }): Promise<void> {
-        await this.publishEvent('MoneyTransferredEvent', data);
-    }
+  async publishMoneyTransferred(data: {
+    fromWalletId: string;
+    toWalletId: string;
+    amount: number;
+    timestamp: Date;
+    transactionId: string;
+    fromBalanceAfter: number;
+    toBalanceAfter: number;
+  }): Promise<void> {
+    await this.rabbitMQService.publish(RABBITMQ_ROUTING_KEYS.MONEY_TRANSFERRED, {
+      eventType: 'MoneyTransferredEvent',
+      data,
+      publishedAt: new Date().toISOString(),
+    });
+    this.logger.log(`Published MoneyTransferredEvent from ${data.fromWalletId} to ${data.toWalletId}`);
+  }
 }

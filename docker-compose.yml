@@ -27,6 +27,20 @@ services:
       - postgres_read_data:/var/lib/postgresql/data
       - ./init-read.sql:/docker-entrypoint-initdb.d/init.sql
 
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: wallet-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: wallet_user
+      RABBITMQ_DEFAULT_PASS: wallet_password
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
 volumes:
   postgres_write_data:
   postgres_read_data:
+  rabbitmq_data:
