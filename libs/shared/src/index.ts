@@ -6,3 +6,4 @@ export * from './events';
 export * from './event-store';
 export * from './read-models';
 export * from './rabbitmq';
+export * from './saga';

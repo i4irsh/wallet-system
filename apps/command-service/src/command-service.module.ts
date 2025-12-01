@@ -1,16 +1,19 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { 
-  EventStoreModule, 
-  EventStoreEntity, 
-  RabbitMQModule, 
-  getRabbitMQConfig 
+import {
+  EventStoreModule,
+  EventStoreEntity,
+  RabbitMQModule,
+  getRabbitMQConfig,
+  TransferSagaEntity,
 } from '@app/shared';
 import { CommandServiceController } from './command-service.controller';
 import { CommandHandlers } from './handlers';
 import { WalletRepository } from './repositories/wallet.repository';
 import { EventPublisherService } from './publishers/event.publisher';
+import { TransferSagaRepository } from './sagas/transfer-saga.repository';
+import { TransferSagaService } from './sagas/transfer-saga.service';
 
 @Module({
   imports: [
@@ -22,13 +25,20 @@ import { EventPublisherService } from './publishers/event.publisher';
       username: process.env.DB_WRITE_USERNAME || 'wallet_user',
       password: process.env.DB_WRITE_PASSWORD || 'wallet_password',
       database: process.env.DB_WRITE_DATABASE || 'wallet_write_db',
-      entities: [EventStoreEntity],
+      entities: [EventStoreEntity, TransferSagaEntity],
       synchronize: false,
     }),
+    TypeOrmModule.forFeature([TransferSagaEntity]),
     EventStoreModule,
     RabbitMQModule.forRoot(getRabbitMQConfig()),
   ],
   controllers: [CommandServiceController],
-  providers: [...CommandHandlers, WalletRepository, EventPublisherService],
+  providers: [
+    ...CommandHandlers,
+    WalletRepository,
+    EventPublisherService,
+    TransferSagaRepository,
+    TransferSagaService,
+  ],
 })
-export class CommandServiceModule {}
+export class CommandServiceModule { }
