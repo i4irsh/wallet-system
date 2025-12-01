@@ -5,6 +5,7 @@ import { EventStoreModule, EventStoreEntity } from '@app/shared';
 import { CommandServiceController } from './command-service.controller';
 import { CommandHandlers } from './handlers';
 import { WalletRepository } from './repositories/wallet.repository';
+import { EventPublisherService } from './publishers/event.publisher';
 
 @Module({
   imports: [
@@ -22,6 +23,6 @@ import { WalletRepository } from './repositories/wallet.repository';
     EventStoreModule,
   ],
   controllers: [CommandServiceController],
-  providers: [...CommandHandlers, WalletRepository],
+  providers: [...CommandHandlers, WalletRepository, EventPublisherService],
 })
 export class CommandServiceModule {}
