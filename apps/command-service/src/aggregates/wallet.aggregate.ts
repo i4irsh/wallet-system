@@ -9,6 +9,7 @@ import { randomUUID as uuid } from 'crypto';
 export class WalletAggregate extends AggregateRoot {
   private id: string;
   private balance: number = 0;
+  private version: number = 0;
 
   constructor(id: string) {
     super();
@@ -23,6 +24,15 @@ export class WalletAggregate extends AggregateRoot {
     return this.balance;
   }
 
+  getVersion(): number {
+    return this.version;
+  }
+
+  setVersion(version: number): void {
+    this.version = version;
+  }
+
+  // Command methods - these create and apply new events
   deposit(amount: number): void {
     if (amount <= 0) {
       throw new Error('Deposit amount must be positive');
@@ -37,6 +47,7 @@ export class WalletAggregate extends AggregateRoot {
 
     this.applyMoneyDeposited(event);
     this.apply(event);
+    this.version++;
   }
 
   withdraw(amount: number): void {
@@ -45,7 +56,7 @@ export class WalletAggregate extends AggregateRoot {
     }
 
     if (this.balance < amount) {
-      throw new Error('Insufficient funds');
+      throw new Error(`Insufficient funds. Current balance: ${this.balance}, requested: ${amount}`);
     }
 
     const event = new MoneyWithdrawnEvent(
@@ -57,6 +68,7 @@ export class WalletAggregate extends AggregateRoot {
 
     this.applyMoneyWithdrawn(event);
     this.apply(event);
+    this.version++;
   }
 
   transferOut(toWalletId: string, amount: number): void {
@@ -65,7 +77,7 @@ export class WalletAggregate extends AggregateRoot {
     }
 
     if (this.balance < amount) {
-      throw new Error('Insufficient funds');
+      throw new Error(`Insufficient funds. Current balance: ${this.balance}, requested: ${amount}`);
     }
 
     const event = new MoneyTransferredEvent(
@@ -78,6 +90,18 @@ export class WalletAggregate extends AggregateRoot {
 
     this.applyMoneyTransferred(event);
     this.apply(event);
+    this.version++;
+  }
+
+  // Replay method - used when loading aggregate from event store
+  replayEvent(event: any): void {
+    if (event instanceof MoneyDepositedEvent) {
+      this.applyMoneyDeposited(event);
+    } else if (event instanceof MoneyWithdrawnEvent) {
+      this.applyMoneyWithdrawn(event);
+    } else if (event instanceof MoneyTransferredEvent) {
+      this.applyMoneyTransferred(event);
+    }
   }
 
   // Event appliers - these mutate the state
