@@ -38,3 +38,7 @@ Content-Type: application/json
 ###
 # Test balance query
 GET http://localhost:3000/balance/wallet-123
+
+###
+# Test transactions query
+GET http://localhost:3000/transactions/wallet-123
