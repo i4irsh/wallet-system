@@ -42,6 +42,27 @@ export class WalletEventConsumer implements OnModuleInit {
       case 'MoneyTransferredEvent':
         await this.handleMoneyTransferred(message.data);
         break;
+      // Saga events for read model
+      case 'SourceWalletDebitedEvent':
+        await this.handleSourceWalletDebited(message.data);
+        break;
+      case 'DestinationWalletCreditedEvent':
+        await this.handleDestinationWalletCredited(message.data);
+        break;
+      case 'SourceWalletRefundedEvent':
+        await this.handleSourceWalletRefunded(message.data);
+        break;
+      case 'TransferCompletedEvent':
+        await this.handleTransferCompleted(message.data);
+        break;
+      case 'TransferFailedEvent':
+        await this.handleTransferFailed(message.data);
+        break;
+      // Info events (just log)
+      case 'TransferInitiatedEvent':
+      case 'CompensationInitiatedEvent':
+        this.logger.log(`Info event: ${message.eventType}`, message.data);
+        break;
       default:
         this.logger.warn(`Unknown event type: ${message.eventType}`);
     }
@@ -124,5 +145,87 @@ export class WalletEventConsumer implements OnModuleInit {
       relatedWalletId: data.fromWalletId,
       timestamp: new Date(data.timestamp),
     });
+  }
+
+  // Saga event handlers
+  private async handleSourceWalletDebited(data: {
+    sagaId: string;
+    walletId: string;
+    amount: number;
+    transactionId: string;
+    timestamp: string;
+    balanceAfter: number;
+  }): Promise<void> {
+    await this.walletReadRepository.upsertWallet(data.walletId, data.balanceAfter);
+
+    await this.walletReadRepository.addTransaction({
+      id: data.transactionId,
+      walletId: data.walletId,
+      type: 'TRANSFER_OUT',
+      amount: data.amount,
+      balanceAfter: data.balanceAfter,
+      timestamp: new Date(data.timestamp),
+    });
+  }
+
+  private async handleDestinationWalletCredited(data: {
+    sagaId: string;
+    walletId: string;
+    amount: number;
+    transactionId: string;
+    timestamp: string;
+    balanceAfter: number;
+  }): Promise<void> {
+    await this.walletReadRepository.upsertWallet(data.walletId, data.balanceAfter);
+
+    await this.walletReadRepository.addTransaction({
+      id: data.transactionId,
+      walletId: data.walletId,
+      type: 'TRANSFER_IN',
+      amount: data.amount,
+      balanceAfter: data.balanceAfter,
+      timestamp: new Date(data.timestamp),
+    });
+  }
+
+  private async handleSourceWalletRefunded(data: {
+    sagaId: string;
+    walletId: string;
+    amount: number;
+    transactionId: string;
+    timestamp: string;
+    balanceAfter: number;
+  }): Promise<void> {
+    await this.walletReadRepository.upsertWallet(data.walletId, data.balanceAfter);
+
+    await this.walletReadRepository.addTransaction({
+      id: data.transactionId,
+      walletId: data.walletId,
+      type: 'REFUND',
+      amount: data.amount,
+      balanceAfter: data.balanceAfter,
+      timestamp: new Date(data.timestamp),
+    });
+  }
+
+  private async handleTransferCompleted(data: {
+    sagaId: string;
+    fromWalletId: string;
+    toWalletId: string;
+    amount: number;
+    timestamp: string;
+  }): Promise<void> {
+    this.logger.log(`Transfer ${data.sagaId} completed: ${data.fromWalletId} -> ${data.toWalletId}`);
+  }
+
+  private async handleTransferFailed(data: {
+    sagaId: string;
+    fromWalletId: string;
+    toWalletId: string;
+    amount: number;
+    reason: string;
+    timestamp: string;
+  }): Promise<void> {
+    this.logger.warn(`Transfer ${data.sagaId} failed: ${data.reason}`);
   }
 }

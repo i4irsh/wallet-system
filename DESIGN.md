@@ -259,6 +259,72 @@ A production-grade event-driven distributed Wallet Microservice implementing **C
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
+### 7. Transfer Saga Pattern
+
+The transfer operation implements the **Saga Pattern** to handle distributed transactions across two wallets with automatic compensation on failure.
+
+### Saga State Machine
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                           TRANSFER SAGA STATE MACHINE                               │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+    ┌───────────┐      Saga Created       ┌────────────────┐
+    │  START    │ ───────────────────────►│   INITIATED    │
+    └───────────┘                         └───────┬────────┘
+                                                  │
+                                          Debit Source Wallet
+                                                  │
+                              ┌───────────────────┴───────────────────┐
+                              │                                       │
+                         Success                                  Failure
+                              │                                       │
+                              ▼                                       ▼
+                   ┌──────────────────┐                     ┌─────────────────┐
+                   │  SOURCE_DEBITED  │                     │     FAILED      │
+                   └────────┬─────────┘                     │  (No refund     │
+                            │                               │   needed)       │
+                    Credit Destination                      └─────────────────┘
+                            │
+            ┌───────────────┴───────────────┐
+            │                               │
+       Success                          Failure
+            │                               │
+            ▼                               ▼
+  ┌─────────────────┐             ┌─────────────────┐
+  │    COMPLETED    │             │   COMPENSATING  │
+  │                 │             │                 │
+  │  Both wallets   │             │  Refund source  │
+  │  updated        │             │  wallet         │
+  └─────────────────┘             └────────┬────────┘
+                                           │
+                                   Compensation Result
+                                           │
+                               ┌───────────┴───────────┐
+                               │                       │
+                           Success                 Failure
+                               │                       │
+                               ▼                       ▼
+                     ┌─────────────────┐    ┌──────────────────────┐
+                     │     FAILED      │    │     COMPENSATING     │
+                     │                 │    │                      │
+                     │  Funds refunded │    │  CRITICAL: Manual    │
+                     │  to source      │    │  intervention needed │
+                     └─────────────────┘    └──────────────────────┘
+```
+
+### Saga Status States
+
+| Status | Description |
+|--------|-------------|
+| `INITIATED` | Transfer saga created, about to debit source wallet |
+| `SOURCE_DEBITED` | Source wallet debited successfully, about to credit destination |
+| `COMPLETED` | Transfer completed successfully |
+| `COMPENSATING` | Credit failed, attempting to refund source wallet |
+| `FAILED` | Transfer failed (with or without compensation) |
+
+
 ---
 
 ## Data Flow
@@ -311,6 +377,23 @@ event_store (
 )
 ```
 
+**Transfer Saga:**
+```sql
+transfer_saga (
+  id                          VARCHAR(255) PRIMARY KEY,
+  from_wallet_id              VARCHAR(255) NOT NULL,
+  to_wallet_id                VARCHAR(255) NOT NULL,
+  amount                      DECIMAL(18, 2) NOT NULL,
+  status                      VARCHAR(50) NOT NULL,
+  debit_transaction_id        VARCHAR(255),      -- Transaction ID from source debit
+  credit_transaction_id       VARCHAR(255),      -- Transaction ID from destination credit
+  compensation_transaction_id VARCHAR(255),      -- Transaction ID from refund (if any)
+  error_message               TEXT,              -- Error details if failed
+  created_at                  TIMESTAMPTZ,
+  updated_at                  TIMESTAMPTZ
+)
+```
+
 ### Read Database (postgres-read:5433)
 
 **Wallet Balance Projection:**
@@ -349,7 +432,9 @@ transaction_read_model (
 | Handlers | Execute commands via `@nestjs/cqrs` CommandBus |
 | Aggregate | `WalletAggregate` - business logic, applies events |
 | Repository | Loads aggregate by replaying events, saves new events |
-| Publisher | Sends events to Query Service |
+| Publisher | Sends events to Query Service via RabbitMQ |
+| TransferSagaService | Orchestrates transfer saga with compensation |
+
 
 ### Query Service
 
@@ -363,14 +448,26 @@ transaction_read_model (
 
 ## Event Types
 
+### Wallet Events
+
 | Event | Description | Data |
 |-------|-------------|------|
-| WalletCreated | Wallet initialized | walletId, timestamp |
-| FundsDeposited | Money added | walletId, amount, transactionId |
-| FundsWithdrawn | Money removed | walletId, amount, transactionId |
-| TransferInitiated | Transfer started | fromWalletId, toWalletId, amount, transactionId |
-| TransferCompleted | Transfer succeeded | fromWalletId, toWalletId, amount, transactionId |
-| TransferFailed | Transfer rolled back | fromWalletId, toWalletId, amount, reason, transactionId |
+| MoneyDeposited | Money added to wallet | walletId, amount, transactionId, timestamp |
+| MoneyWithdrawn | Money removed from wallet | walletId, amount, transactionId, timestamp |
+| MoneyTransferred | Transfer completed (legacy) | fromWalletId, toWalletId, amount, transactionId, timestamp |
+
+### Transfer Saga Events
+
+| Event | Description | Data |
+|-------|-------------|------|
+| TransferInitiated | Saga started | sagaId, fromWalletId, toWalletId, amount, timestamp |
+| SourceWalletDebited | Source wallet debited | sagaId, walletId, amount, transactionId, timestamp |
+| DestinationWalletCredited | Destination wallet credited | sagaId, walletId, amount, transactionId, timestamp |
+| TransferCompleted | Transfer succeeded | sagaId, fromWalletId, toWalletId, amount, timestamp |
+| CompensationInitiated | Compensation started | sagaId, walletId, amount, reason, timestamp |
+| SourceWalletRefunded | Source wallet refunded | sagaId, walletId, amount, transactionId, timestamp |
+| TransferFailed | Transfer failed | sagaId, fromWalletId, toWalletId, amount, reason, timestamp |
+
 
 ---
 
@@ -381,18 +478,20 @@ wallet-system/
 ├── apps/
 │   ├── api-gateway/        # HTTP API (port 3000)
 │   ├── command-service/    # Handles writes (port 3001)
-│   │   └── publishers/     # RabbitMQ event publishers
+│   │   ├── publishers/     # RabbitMQ event publishers
+│   │   └── sagas/          # Saga orchestrators
 │   └── query-service/      # Handles reads (port 3002)
 │       └── consumers/      # RabbitMQ event consumers
 ├── libs/
 │   └── shared/
 │       ├── dto/            # Data transfer objects
-│       ├── events/         # Event definitions
+│       ├── events/         # Event definitions (including saga events)
 │       ├── event-store/    # Event store entity & service
 │       ├── rabbitmq/       # RabbitMQ module & service
-│       └── read-models/    # Read model entities
+│       ├── read-models/    # Read model entities
+│       └── saga/           # Saga entities
 ├── docker-compose.yml
-├── init-write.sql          # Event store schema
+├── init-write.sql          # Event store + saga schema
 ├── init-read.sql           # Read model schema
 └── README.md
 ```
@@ -414,49 +513,16 @@ wallet-system/
 | Separate Databases | ✅ | Write DB (5432) and Read DB (5433) |
 | Message Broker | ✅ | RabbitMQ with topic exchange for event routing |
 | Dead Letter Queue | ✅ | Failed messages routed to wallet.events.dlq |
+| Transfer Saga | ✅ | Saga pattern with compensation for distributed transfer transactions |
 
 ### ⏳ Pending
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
 | Async Background Worker | ⏳ | Need separate consumer service with business logic |
-| Transfer for Distributed Transaction | ⏳ | Need saga/compensation for rollback on credit failure |
 | Idempotency | ⏳ | Need request ID tracking for duplicate detection |
 | Snapshots | ⏳ | Need snapshot table for aggregate performance |
-| Dead Letter Queue | ⏳ | Need DLQ for failed message processing |
 | Test Suite | ⏳ | Need comprehensive tests |
 | Configuration | ⏳ | Need centralized config management |
 | Validation | ⏳ | Need input validation on DTOs |
 
----
-
-## Pending Implementations
-
-### 1. Transfer Failure Handling (Saga Pattern)
-
-**Planned Approach:** Implement a saga for transfer operations.
-
-```
-1. TransferInitiated event
-2. Debit source wallet → FundsWithdrawn event
-3. Credit destination wallet
-   - Success → TransferCompleted event
-   - Failure → Compensate: Credit source wallet back → TransferFailed event
-```
-
-**Considerations:**
-- Saga state tracking in database
-- Compensation must be idempotent
-- Handle partial failures gracefully
-
-### 2. Idempotency
-
-**Planned Approach:** Client provides unique request ID in header.
-
-```
-X-Idempotency-Key: <uuid>
-```
-
-- Store processed request IDs with responses
-- On duplicate request, return stored response
-- TTL on idempotency records (e.g., 24 hours)
