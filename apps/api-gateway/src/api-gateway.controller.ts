@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
-import { DepositDto, WithdrawDto, TransferDto, IWallet, ITransaction } from '@app/shared';
+import { DepositDto, WithdrawDto, TransferDto, IWallet, ITransaction, RequireIdempotency } from '@app/shared';
 
 interface PingResponse {
   commandService: string;
@@ -27,6 +27,7 @@ export class ApiGatewayController {
   }
 
   @Post('deposit')
+  @RequireIdempotency()
   async deposit(@Body() data: DepositDto): Promise<IWallet> {
     return firstValueFrom<IWallet>(
       this.commandClient.send({ cmd: 'deposit' }, data),
@@ -34,6 +35,7 @@ export class ApiGatewayController {
   }
 
   @Post('withdraw')
+  @RequireIdempotency()
   async withdraw(@Body() data: WithdrawDto): Promise<IWallet> {
     return firstValueFrom<IWallet>(
       this.commandClient.send({ cmd: 'withdraw' }, data),
@@ -41,6 +43,7 @@ export class ApiGatewayController {
   }
 
   @Post('transfer')
+  @RequireIdempotency()
   async transfer(@Body() data: TransferDto): Promise<IWallet> {
     return firstValueFrom<IWallet>(
       this.commandClient.send({ cmd: 'transfer' }, data),

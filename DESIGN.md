@@ -325,6 +325,73 @@ The transfer operation implements the **Saga Pattern** to handle distributed tra
 | `FAILED` | Transfer failed (with or without compensation) |
 
 
+### 8. Idempotency with Redis
+
+**Decision:** Use Redis for idempotency key tracking to prevent duplicate request processing.
+
+**Reasoning:**
+- Financial operations must not be processed twice (double deposits, double withdrawals)
+- Clients may retry requests due to network failures or timeouts
+- Distributed systems need a shared store to track request status across instances
+- Redis provides atomic operations (SET NX) for safe lock acquisition
+
+**Implementation:**
+- Client sends `x-idempotency-key` header with each mutating request
+- Guard checks Redis for existing key before processing
+- Interceptor stores successful response for future duplicate requests
+- Failed requests release lock to allow client retry
+
+**Trade-offs:**
+- Additional infrastructure dependency (Redis)
+- TTL-based expiration means very old requests could be reprocessed
+- Slight latency overhead for Redis round-trips
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                              IDEMPOTENCY FLOW                                       │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+    Request with                Guard checks               Process or
+    x-idempotency-key           Redis status               return cached
+          │                          │                          │
+          ▼                          ▼                          ▼
+    ┌───────────┐           ┌──────────────────┐        ┌──────────────────┐
+    │  POST     │           │  Redis Lookup    │        │  Response        │
+    │ /deposit  │ ────────► │                  │ ─────► │                  │
+    │  key: abc │           │  SET NX with TTL │        │  Stored/Cached   │
+    └───────────┘           └──────────────────┘        └──────────────────┘
+```
+
+    IDEMPOTENCY STATES
+    ┌──────────────────┬────────────────────────────────────────────────────┐
+    │ Status           │ Behavior                                           │
+    ├──────────────────┼────────────────────────────────────────────────────┤
+    │ NEW              │ Acquire lock, process request                      │
+    │ IN_PROGRESS      │ Return 409 Conflict (request being processed)      │
+    │ COMPLETED        │ Return cached response with _cached: true          │
+    └──────────────────┴────────────────────────────────────────────────────┘
+
+```
+    REQUEST LIFECYCLE
+    ┌───────────────────────────────────────────────────────────────────────────────┐
+    │                                                                               │
+    │   ┌─────────┐    ┌─────────────────┐    ┌──────────┐    ┌─────────────────┐   │
+    │   │ Request │───►│ IdempotencyGuard│───►│ Handler  │───►│ Interceptor     │   │
+    │   └─────────┘    └─────────────────┘    └──────────┘    └─────────────────┘   │
+    │                          │                   │                   │            │
+    │                  Check & Lock           Execute           Store Response      │
+    │                     Redis              Business            in Redis           │
+    │                          │               Logic                   │            │
+    │                          ▼                   ▼                   ▼            │
+    │                   ┌──────────┐        ┌──────────┐        ┌──────────┐        │
+    │                   │  Redis   │        │ Command  │        │  Redis   │        │
+    │                   │          │        │ Service  │        │          │        │
+    │                   └──────────┘        └──────────┘        └──────────┘        │
+    │                                                                               │
+    └───────────────────────────────────────────────────────────────────────────────┘
+
+```
+
 ---
 
 ## Data Flow
@@ -424,6 +491,15 @@ transaction_read_model (
 
 ## Components
 
+### API Gateway
+
+| Component | Purpose |
+|-----------|---------|
+| Controller | Routes HTTP requests to Command/Query services via TCP |
+| IdempotencyGuard | Checks Redis for duplicate requests, enforces `@RequireIdempotency()` |
+| IdempotencyInterceptor | Stores successful responses in Redis, releases locks on error |
+| IdempotencyService | Redis client for idempotency key operations (check, lock, complete, release) |
+
 ### Command Service
 
 | Component | Purpose |
@@ -487,9 +563,13 @@ wallet-system/
 │       ├── dto/            # Data transfer objects
 │       ├── events/         # Event definitions (including saga events)
 │       ├── event-store/    # Event store entity & service
+│       ├── idempotency/    # Idempotency module (Redis-based)
+│       │   ├── guards/     # IdempotencyGuard
+│       │   └── interceptors/ # IdempotencyInterceptor
 │       ├── rabbitmq/       # RabbitMQ module & service
 │       ├── read-models/    # Read model entities
 │       └── saga/           # Saga entities
+├── tests/                  # Integration tests
 ├── docker-compose.yml
 ├── init-write.sql          # Event store + saga schema
 ├── init-read.sql           # Read model schema
@@ -514,13 +594,13 @@ wallet-system/
 | Message Broker | ✅ | RabbitMQ with topic exchange for event routing |
 | Dead Letter Queue | ✅ | Failed messages routed to wallet.events.dlq |
 | Transfer Saga | ✅ | Saga pattern with compensation for distributed transfer transactions |
+| Idempotency | ✅ | Redis-based idempotency with `x-idempotency-key` header, guard + interceptor pattern |
 
 ### ⏳ Pending
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
 | Async Background Worker | ⏳ | Need separate consumer service with business logic |
-| Idempotency | ⏳ | Need request ID tracking for duplicate detection |
 | Snapshots | ⏳ | Need snapshot table for aggregate performance |
 | Test Suite | ⏳ | Need comprehensive tests |
 | Configuration | ⏳ | Need centralized config management |

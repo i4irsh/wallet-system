@@ -1,7 +1,13 @@
 import { Module } from '@nestjs/common';
-import { ApiGatewayController } from './api-gateway.controller';
-import { ApiGatewayService } from './api-gateway.service';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import {
+  IdempotencyModule,
+  getIdempotencyConfig,
+  IdempotencyGuard,
+  IdempotencyInterceptor,
+} from '@app/shared';
+import { ApiGatewayController } from './api-gateway.controller';
 
 @Module({
   imports: [
@@ -23,8 +29,18 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
         },
       },
     ]),
+    IdempotencyModule.forRoot(getIdempotencyConfig()),
   ],
   controllers: [ApiGatewayController],
-  providers: [ApiGatewayService],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: IdempotencyGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: IdempotencyInterceptor,
+    },
+  ],
 })
 export class ApiGatewayModule {}

@@ -7,3 +7,4 @@ export * from './event-store';
 export * from './read-models';
 export * from './rabbitmq';
 export * from './saga';
+export * from './idempotency';
