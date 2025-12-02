@@ -19,7 +19,11 @@ import { FraudRepository } from './repositories/fraud.repository';
       entities: [AlertEntity, RiskProfileEntity, RecentEventEntity],
       synchronize: false,
     }),
-    TypeOrmModule.forFeature([AlertEntity, RiskProfileEntity, RecentEventEntity]),
+    TypeOrmModule.forFeature([
+      AlertEntity,
+      RiskProfileEntity,
+      RecentEventEntity,
+    ]),
     RabbitMQModule.forRoot(getFraudRabbitMQConfig()),
   ],
   providers: [
@@ -30,4 +34,3 @@ import { FraudRepository } from './repositories/fraud.repository';
   ],
 })
 export class FraudServiceModule {}
-

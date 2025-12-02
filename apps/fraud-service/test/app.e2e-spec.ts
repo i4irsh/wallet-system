@@ -30,4 +30,3 @@ describe('FraudService (e2e)', () => {
     expect(app).toBeDefined();
   });
 });
-

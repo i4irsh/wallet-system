@@ -66,7 +66,7 @@ export class EventStoreService {
 
   private serializeEvent(event: any): Record<string, any> {
     const serialized: Record<string, any> = {};
-    
+
     for (const key of Object.keys(event)) {
       const value = event[key];
       if (value instanceof Date) {
@@ -75,7 +75,7 @@ export class EventStoreService {
         serialized[key] = value;
       }
     }
-    
+
     return serialized;
   }
 }

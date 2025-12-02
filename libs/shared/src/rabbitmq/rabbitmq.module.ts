@@ -5,17 +5,17 @@ import { RabbitMQConfig } from './rabbitmq.config';
 @Global()
 @Module({})
 export class RabbitMQModule {
-    static forRoot(config: RabbitMQConfig): DynamicModule {
-        return {
-            module: RabbitMQModule,
-            providers: [
-                {
-                    provide: 'RABBITMQ_CONFIG',
-                    useValue: config,
-                },
-                RabbitMQService,
-            ],
-            exports: [RabbitMQService],
-        };
-    }
+  static forRoot(config: RabbitMQConfig): DynamicModule {
+    return {
+      module: RabbitMQModule,
+      providers: [
+        {
+          provide: 'RABBITMQ_CONFIG',
+          useValue: config,
+        },
+        RabbitMQService,
+      ],
+      exports: [RabbitMQService],
+    };
+  }
 }

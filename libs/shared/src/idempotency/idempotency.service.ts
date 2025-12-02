@@ -3,154 +3,158 @@ import Redis from 'ioredis';
 import type { IdempotencyConfig } from './idempotency.config';
 
 export enum IdempotencyStatus {
-    NEW = 'NEW',
-    IN_PROGRESS = 'IN_PROGRESS',
-    COMPLETED = 'COMPLETED',
+  NEW = 'NEW',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
 }
 
 export interface IdempotencyRecord {
-    status: IdempotencyStatus;
-    response?: any;
-    createdAt: string;
-    completedAt?: string;
+  status: IdempotencyStatus;
+  response?: any;
+  createdAt: string;
+  completedAt?: string;
 }
 
 @Injectable()
 export class IdempotencyService implements OnModuleDestroy {
-    private readonly redis: Redis;
-    private readonly logger = new Logger(IdempotencyService.name);
+  private readonly redis: Redis;
+  private readonly logger = new Logger(IdempotencyService.name);
 
-    constructor(
-        @Inject('IDEMPOTENCY_CONFIG') private readonly config: IdempotencyConfig,
-    ) {
-        this.redis = new Redis({
-            host: config.host,
-            port: config.port,
-            retryStrategy: (times) => {
-                if (times > 3) {
-                    this.logger.error('Redis connection failed after 3 retries');
-                    return null;
-                }
-                return Math.min(times * 200, 2000);
-            },
-        });
-
-        this.redis.on('connect', () => {
-            this.logger.log('Connected to Redis');
-        });
-
-        this.redis.on('error', (error) => {
-            this.logger.error('Redis error', error);
-        });
-    }
-
-    async onModuleDestroy(): Promise<void> {
-        await this.redis.quit();
-    }
-
-    private getKey(idempotencyKey: string): string {
-        return `${this.config.keyPrefix}${idempotencyKey}`;
-    }
-
-    /**
-     * Check if request is duplicate and try to acquire lock
-     * Returns:
-     * - { isDuplicate: false } if this is a new request (lock acquired)
-     * - { isDuplicate: true, status: 'IN_PROGRESS' } if request is being processed
-     * - { isDuplicate: true, status: 'COMPLETED', response } if request was already completed
-     */
-    async checkAndLock(
-        idempotencyKey: string,
-    ): Promise<{ isDuplicate: boolean; status?: IdempotencyStatus; response?: any }> {
-        const key = this.getKey(idempotencyKey);
-
-        // Try to get existing record
-        const existing = await this.redis.get(key);
-
-        if (existing) {
-            const record: IdempotencyRecord = JSON.parse(existing);
-            this.logger.debug(`Found existing idempotency record: ${record.status}`);
-
-            return {
-                isDuplicate: true,
-                status: record.status,
-                response: record.response,
-            };
+  constructor(
+    @Inject('IDEMPOTENCY_CONFIG') private readonly config: IdempotencyConfig,
+  ) {
+    this.redis = new Redis({
+      host: config.host,
+      port: config.port,
+      retryStrategy: (times) => {
+        if (times > 3) {
+          this.logger.error('Redis connection failed after 3 retries');
+          return null;
         }
+        return Math.min(times * 200, 2000);
+      },
+    });
 
-        // Try to acquire lock using SET NX (only set if not exists)
-        const record: IdempotencyRecord = {
-            status: IdempotencyStatus.IN_PROGRESS,
-            createdAt: new Date().toISOString(),
-        };
+    this.redis.on('connect', () => {
+      this.logger.log('Connected to Redis');
+    });
 
-        const acquired = await this.redis.set(
-            key,
-            JSON.stringify(record),
-            'EX',
-            this.config.ttlSeconds,
-            'NX',
-        );
+    this.redis.on('error', (error) => {
+      this.logger.error('Redis error', error);
+    });
+  }
 
-        if (acquired) {
-            this.logger.debug(`Acquired idempotency lock for key: ${idempotencyKey}`);
-            return { isDuplicate: false };
-        }
+  async onModuleDestroy(): Promise<void> {
+    await this.redis.quit();
+  }
 
-        // Lock was acquired by another process between our GET and SET
-        // Re-fetch to get the current state
-        const current = await this.redis.get(key);
-        if (current) {
-            const currentRecord: IdempotencyRecord = JSON.parse(current);
-            return {
-                isDuplicate: true,
-                status: currentRecord.status,
-                response: currentRecord.response,
-            };
-        }
+  private getKey(idempotencyKey: string): string {
+    return `${this.config.keyPrefix}${idempotencyKey}`;
+  }
 
-        // Edge case: record expired between operations, treat as new
-        return { isDuplicate: false };
+  /**
+   * Check if request is duplicate and try to acquire lock
+   * Returns:
+   * - { isDuplicate: false } if this is a new request (lock acquired)
+   * - { isDuplicate: true, status: 'IN_PROGRESS' } if request is being processed
+   * - { isDuplicate: true, status: 'COMPLETED', response } if request was already completed
+   */
+  async checkAndLock(
+    idempotencyKey: string,
+  ): Promise<{
+    isDuplicate: boolean;
+    status?: IdempotencyStatus;
+    response?: any;
+  }> {
+    const key = this.getKey(idempotencyKey);
+
+    // Try to get existing record
+    const existing = await this.redis.get(key);
+
+    if (existing) {
+      const record: IdempotencyRecord = JSON.parse(existing);
+      this.logger.debug(`Found existing idempotency record: ${record.status}`);
+
+      return {
+        isDuplicate: true,
+        status: record.status,
+        response: record.response,
+      };
     }
 
-    /**
-     * Mark request as completed and store response
-     */
-    async complete(idempotencyKey: string, response: any): Promise<void> {
-        const key = this.getKey(idempotencyKey);
+    // Try to acquire lock using SET NX (only set if not exists)
+    const record: IdempotencyRecord = {
+      status: IdempotencyStatus.IN_PROGRESS,
+      createdAt: new Date().toISOString(),
+    };
 
-        const record: IdempotencyRecord = {
-            status: IdempotencyStatus.COMPLETED,
-            response,
-            createdAt: new Date().toISOString(),
-            completedAt: new Date().toISOString(),
-        };
+    const acquired = await this.redis.set(
+      key,
+      JSON.stringify(record),
+      'EX',
+      this.config.ttlSeconds,
+      'NX',
+    );
 
-        await this.redis.set(
-            key,
-            JSON.stringify(record),
-            'EX',
-            this.config.ttlSeconds,
-        );
-
-        this.logger.debug(`Marked idempotency key as completed: ${idempotencyKey}`);
+    if (acquired) {
+      this.logger.debug(`Acquired idempotency lock for key: ${idempotencyKey}`);
+      return { isDuplicate: false };
     }
 
-    /**
-     * Remove lock if processing failed (allow retry)
-     */
-    async release(idempotencyKey: string): Promise<void> {
-        const key = this.getKey(idempotencyKey);
-        await this.redis.del(key);
-        this.logger.debug(`Released idempotency lock: ${idempotencyKey}`);
+    // Lock was acquired by another process between our GET and SET
+    // Re-fetch to get the current state
+    const current = await this.redis.get(key);
+    if (current) {
+      const currentRecord: IdempotencyRecord = JSON.parse(current);
+      return {
+        isDuplicate: true,
+        status: currentRecord.status,
+        response: currentRecord.response,
+      };
     }
 
-    /**
-     * Check if key exists
-     */
-    async exists(idempotencyKey: string): Promise<boolean> {
-        const key = this.getKey(idempotencyKey);
-        const result = await this.redis.exists(key);
-        return result === 1;
-    }
+    // Edge case: record expired between operations, treat as new
+    return { isDuplicate: false };
+  }
+
+  /**
+   * Mark request as completed and store response
+   */
+  async complete(idempotencyKey: string, response: any): Promise<void> {
+    const key = this.getKey(idempotencyKey);
+
+    const record: IdempotencyRecord = {
+      status: IdempotencyStatus.COMPLETED,
+      response,
+      createdAt: new Date().toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+
+    await this.redis.set(
+      key,
+      JSON.stringify(record),
+      'EX',
+      this.config.ttlSeconds,
+    );
+
+    this.logger.debug(`Marked idempotency key as completed: ${idempotencyKey}`);
+  }
+
+  /**
+   * Remove lock if processing failed (allow retry)
+   */
+  async release(idempotencyKey: string): Promise<void> {
+    const key = this.getKey(idempotencyKey);
+    await this.redis.del(key);
+    this.logger.debug(`Released idempotency lock: ${idempotencyKey}`);
+  }
+
+  /**
+   * Check if key exists
+   */
+  async exists(idempotencyKey: string): Promise<boolean> {
+    const key = this.getKey(idempotencyKey);
+    const result = await this.redis.exists(key);
+    return result === 1;
+  }
 }

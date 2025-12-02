@@ -41,4 +41,4 @@ import { TransferSagaService } from './sagas/transfer-saga.service';
     TransferSagaService,
   ],
 })
-export class CommandServiceModule { }
+export class CommandServiceModule {}

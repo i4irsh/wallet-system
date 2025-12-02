@@ -34,18 +34,27 @@ export class FraudEventConsumer implements OnModuleInit {
   }
 
   private async startConsuming(): Promise<void> {
-    await this.rabbitMQService.consume(async (message: WalletEvent, ack, nack) => {
-      this.logger.log(`Received event for fraud analysis: ${message.eventType}`);
+    await this.rabbitMQService.consume(
+      async (message: WalletEvent, ack, nack) => {
+        this.logger.log(
+          `Received event for fraud analysis: ${message.eventType}`,
+        );
 
-      try {
-        await this.processEvent(message);
-        ack();
-        this.logger.log(`Successfully processed ${message.eventType} for fraud detection`);
-      } catch (error) {
-        this.logger.error(`Error processing ${message.eventType} for fraud detection`, error);
-        nack(false);
-      }
-    });
+        try {
+          await this.processEvent(message);
+          ack();
+          this.logger.log(
+            `Successfully processed ${message.eventType} for fraud detection`,
+          );
+        } catch (error) {
+          this.logger.error(
+            `Error processing ${message.eventType} for fraud detection`,
+            error,
+          );
+          nack(false);
+        }
+      },
+    );
   }
 
   private async processEvent(message: WalletEvent): Promise<void> {
@@ -114,7 +123,10 @@ export class FraudEventConsumer implements OnModuleInit {
     }
   }
 
-  private extractWalletIds(eventType: string, data: Record<string, any>): string[] {
+  private extractWalletIds(
+    eventType: string,
+    data: Record<string, any>,
+  ): string[] {
     const walletIds: string[] = [];
 
     if (data.walletId) {
@@ -130,4 +142,3 @@ export class FraudEventConsumer implements OnModuleInit {
     return [...new Set(walletIds)]; // Remove duplicates
   }
 }
-

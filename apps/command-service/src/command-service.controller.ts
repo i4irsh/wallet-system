@@ -5,7 +5,7 @@ import { CommandBus } from '@nestjs/cqrs';
 import { DepositCommand, WithdrawCommand, TransferCommand } from './commands';
 
 @Controller()
-export class CommandServiceController {  
+export class CommandServiceController {
   constructor(private readonly commandBus: CommandBus) {}
 
   @MessagePattern({ cmd: 'ping' })

@@ -58,7 +58,9 @@ export class FraudRepository {
     });
 
     const savedAlert = await this.alertRepository.save(alert);
-    this.logger.debug(`Created alert ${savedAlert.id} for wallet ${dto.walletId}`);
+    this.logger.debug(
+      `Created alert ${savedAlert.id} for wallet ${dto.walletId}`,
+    );
     return savedAlert;
   }
 
@@ -112,7 +114,9 @@ export class FraudRepository {
     });
 
     await this.recentEventRepository.save(event);
-    this.logger.debug(`Tracked event ${dto.eventType} for wallet ${dto.walletId}`);
+    this.logger.debug(
+      `Tracked event ${dto.eventType} for wallet ${dto.walletId}`,
+    );
   }
 
   // Methods for fraud rule evaluation
@@ -164,4 +168,3 @@ export class FraudRepository {
     });
   }
 }
-

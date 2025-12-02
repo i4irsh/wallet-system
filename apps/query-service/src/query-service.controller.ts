@@ -33,7 +33,9 @@ export class QueryServiceController {
 
   @MessagePattern({ cmd: 'get_transactions' })
   async getTransactions(@Payload() data: { walletId: string }) {
-    const transactions = await this.walletReadRepository.getTransactions(data.walletId);
+    const transactions = await this.walletReadRepository.getTransactions(
+      data.walletId,
+    );
 
     return transactions.map((t) => ({
       id: t.id,

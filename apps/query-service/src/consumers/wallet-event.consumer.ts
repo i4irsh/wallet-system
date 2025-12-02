@@ -31,7 +31,10 @@ export class WalletEventConsumer implements OnModuleInit {
     });
   }
 
-  private async handleEvent(message: { eventType: string; data: any }): Promise<void> {
+  private async handleEvent(message: {
+    eventType: string;
+    data: any;
+  }): Promise<void> {
     switch (message.eventType) {
       case 'MoneyDepositedEvent':
         await this.handleMoneyDeposited(message.data);
@@ -77,7 +80,10 @@ export class WalletEventConsumer implements OnModuleInit {
   }): Promise<void> {
     this.logger.debug('Processing MoneyDepositedEvent', data);
 
-    await this.walletReadRepository.upsertWallet(data.walletId, data.balanceAfter);
+    await this.walletReadRepository.upsertWallet(
+      data.walletId,
+      data.balanceAfter,
+    );
 
     await this.walletReadRepository.addTransaction({
       id: data.transactionId,
@@ -98,7 +104,10 @@ export class WalletEventConsumer implements OnModuleInit {
   }): Promise<void> {
     this.logger.debug('Processing MoneyWithdrawnEvent', data);
 
-    await this.walletReadRepository.upsertWallet(data.walletId, data.balanceAfter);
+    await this.walletReadRepository.upsertWallet(
+      data.walletId,
+      data.balanceAfter,
+    );
 
     await this.walletReadRepository.addTransaction({
       id: data.transactionId,
@@ -122,8 +131,14 @@ export class WalletEventConsumer implements OnModuleInit {
     this.logger.debug('Processing MoneyTransferredEvent', data);
 
     // Update both wallets
-    await this.walletReadRepository.upsertWallet(data.fromWalletId, data.fromBalanceAfter);
-    await this.walletReadRepository.upsertWallet(data.toWalletId, data.toBalanceAfter);
+    await this.walletReadRepository.upsertWallet(
+      data.fromWalletId,
+      data.fromBalanceAfter,
+    );
+    await this.walletReadRepository.upsertWallet(
+      data.toWalletId,
+      data.toBalanceAfter,
+    );
 
     // Add transaction records for both wallets
     await this.walletReadRepository.addTransaction({
@@ -156,7 +171,10 @@ export class WalletEventConsumer implements OnModuleInit {
     timestamp: string;
     balanceAfter: number;
   }): Promise<void> {
-    await this.walletReadRepository.upsertWallet(data.walletId, data.balanceAfter);
+    await this.walletReadRepository.upsertWallet(
+      data.walletId,
+      data.balanceAfter,
+    );
 
     await this.walletReadRepository.addTransaction({
       id: data.transactionId,
@@ -176,7 +194,10 @@ export class WalletEventConsumer implements OnModuleInit {
     timestamp: string;
     balanceAfter: number;
   }): Promise<void> {
-    await this.walletReadRepository.upsertWallet(data.walletId, data.balanceAfter);
+    await this.walletReadRepository.upsertWallet(
+      data.walletId,
+      data.balanceAfter,
+    );
 
     await this.walletReadRepository.addTransaction({
       id: data.transactionId,
@@ -196,7 +217,10 @@ export class WalletEventConsumer implements OnModuleInit {
     timestamp: string;
     balanceAfter: number;
   }): Promise<void> {
-    await this.walletReadRepository.upsertWallet(data.walletId, data.balanceAfter);
+    await this.walletReadRepository.upsertWallet(
+      data.walletId,
+      data.balanceAfter,
+    );
 
     await this.walletReadRepository.addTransaction({
       id: data.transactionId,
@@ -215,7 +239,9 @@ export class WalletEventConsumer implements OnModuleInit {
     amount: number;
     timestamp: string;
   }): Promise<void> {
-    this.logger.log(`Transfer ${data.sagaId} completed: ${data.fromWalletId} -> ${data.toWalletId}`);
+    this.logger.log(
+      `Transfer ${data.sagaId} completed: ${data.fromWalletId} -> ${data.toWalletId}`,
+    );
   }
 
   private async handleTransferFailed(data: {

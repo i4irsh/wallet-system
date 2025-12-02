@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { 
-  WalletReadEntity, 
-  TransactionReadEntity, 
-  RabbitMQModule, 
-  getRabbitMQConfig 
+import {
+  WalletReadEntity,
+  TransactionReadEntity,
+  RabbitMQModule,
+  getRabbitMQConfig,
 } from '@app/shared';
 import { QueryServiceController } from './query-service.controller';
 import { WalletReadRepository } from './repositories/wallet-read.repository';

@@ -29,4 +29,3 @@ export class RiskProfileEntity {
   @UpdateDateColumn({ name: 'last_updated', type: 'timestamptz' })
   lastUpdated: Date;
 }
-

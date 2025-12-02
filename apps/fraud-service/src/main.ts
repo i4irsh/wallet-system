@@ -17,4 +17,3 @@ async function bootstrap() {
   console.log('Fraud Service is listening on port 3003');
 }
 void bootstrap();
-

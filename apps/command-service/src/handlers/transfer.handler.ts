@@ -1,6 +1,9 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { TransferCommand } from '../commands';
-import { TransferSagaService, TransferResult } from '../sagas/transfer-saga.service';
+import {
+  TransferSagaService,
+  TransferResult,
+} from '../sagas/transfer-saga.service';
 
 @CommandHandler(TransferCommand)
 export class TransferHandler implements ICommandHandler<TransferCommand> {

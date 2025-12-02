@@ -11,7 +11,9 @@ export class WithdrawHandler implements ICommandHandler<WithdrawCommand> {
     private readonly eventPublisher: EventPublisherService,
   ) {}
 
-  async execute(command: WithdrawCommand): Promise<{ success: boolean; message: string; balance: number }> {
+  async execute(
+    command: WithdrawCommand,
+  ): Promise<{ success: boolean; message: string; balance: number }> {
     const { walletId, amount } = command;
 
     const wallet = await this.walletRepository.findById(walletId);
@@ -20,7 +22,9 @@ export class WithdrawHandler implements ICommandHandler<WithdrawCommand> {
 
     // Capture event before save (commit clears uncommitted events)
     const uncommittedEvents = wallet.getUncommittedEvents();
-    const lastEvent = uncommittedEvents[uncommittedEvents.length - 1] as MoneyWithdrawnEvent;
+    const lastEvent = uncommittedEvents[
+      uncommittedEvents.length - 1
+    ] as MoneyWithdrawnEvent;
 
     await this.walletRepository.save(wallet);
 
