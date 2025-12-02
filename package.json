@@ -20,7 +20,8 @@
     "test:e2e": "jest --config ./apps/wallet-system/test/jest-e2e.json",
     "test:concurrency": "npx ts-node tests/concurrency.test.ts",
     "test:transfer-saga": "npx ts-node tests/transfer-saga.test.ts",
-    "test:idempotency": "npx ts-node tests/idempotency.test.ts"
+    "test:idempotency": "npx ts-node tests/idempotency.test.ts",
+    "test:fraud": "npx ts-node tests/fraud.test.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -33,6 +34,7 @@
     "amqp-connection-manager": "^5.0.0",
     "amqplib": "^0.10.9",
     "ioredis": "^5.8.2",
+    "json-rules-engine": "^7.3.1",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",

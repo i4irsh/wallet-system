@@ -122,7 +122,7 @@ A production-grade event-driven distributed Wallet Microservice implementing **C
 
 ### 3. Microservices Architecture
 
-**Decision:** Three separate services with RabbitMQ for async event publishing.
+**Decision:** Event-driven architecture with an API Gateway and microservices [`command-service`, `query-service`, `fraud-service`], using RabbitMQ as the message broker.
 
 **Reasoning:**
 - Clear separation of concerns
@@ -131,16 +131,26 @@ A production-grade event-driven distributed Wallet Microservice implementing **C
 - Async event processing via message broker
 - Separate databases for true CQRS isolation
 
+**Services:**
+
+| Service | Responsibility |
+|---------|----------------|
+| **API Gateway** | HTTP entry point, request routing, rate limiting, authentication/authorization (future), load balancing |
+| **Command Service** | Executes write operations (deposits, withdrawals, transfers), validates business rules, persists events, publishes events to RabbitMQ |
+| **Query Service** | Consumes events, builds and maintains read-optimized projections for balance and transaction history queries |
+| **Fraud Service** | Consumes events, analyzes transactions in real-time for fraud detection and risk scoring, generates alerts |
+
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
 │                              WALLET MICROSERVICE SYSTEM                             │
 ├─────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                     │
-│   ┌──────────┐                                                                      │
-│   │  Client  │ ◄───────── HTTP/REST ──────────►  ┌──────────────────┐               │
-│   │  (User)  │                                   │   API Gateway    │               │
-│   └──────────┘                                   │     :3000        │               │
-│                                                  └────────┬─────────┘               │
+│   ┌──────────┐                                   ┌──────────────────┐               │
+│   │  Client  │ ◄───────── HTTP/REST ──────────►  │   API Gateway    │               │
+│   │  (User)  │                                   │     :3000        │               │
+│   └──────────┘                                   └────────┬─────────┘               │
+│                                                           │                         │
 │                                                           │                         │
 │                                           ┌───────────────┴───────────────┐         │
 │                                           │           TCP                 │         │
@@ -154,21 +164,33 @@ A production-grade event-driven distributed Wallet Microservice implementing **C
 │                                │  │ Publisher  │  │            │  │            │  │ │
 │                                │  └────────────┘  │            │  └────────────┘  │ │
 │                                └────────┬─────────┘            └────────▲─────────┘ │
-│                                         │                               │           │
-│                    ┌────────────────────┴───────────────────────────────┤           │
-│                    │                    │                               │           │
-│                    ▼                    ▼                               │           │
-│           ┌──────────────┐    ┌──────────────────────────────┐          │           │
-│           │   Write DB   │    │         RabbitMQ             │          │           │
-│           │ (Event Store)│    │          :5672               │──────────┘           │
-│           │    :5432     │    │                              │                      │
-│           └──────────────┘    │  ┌──────────┐  ┌──────────┐  │    ┌──────────────┐  │
+│                                         │                               ││          │
+│                    ┌────────────────────│                               ││          │
+│                    │                    │                               ││          │
+│                    ▼                    ▼                               ││          │
+│           ┌──────────────┐    ┌──────────────────────────────┐          ││          │
+│           │   Write DB   │    │         RabbitMQ             │          ││          │
+│           │ (Event Store)│    │          :5672               │──────────┘│          │
+│           │    :5432     │    │                              │           │          │
+│           └──────────────┘    │  ┌──────────┐  ┌──────────┐  │    ┌──────▼───────┐  │
 │                               │  │ Exchange │─►│  Queue   │  │    │   Read DB    │  │
 │                               │  └──────────┘  └──────────┘  │    │(Projections) │  │
 │                               │                ┌──────────┐  │    │    :5433     │  │
 │                               │                │   DLQ    │  │    └──────────────┘  │
 │                               │                └──────────┘  │                      │
-│                               └──────────────────────────────┘                      │
+│                               └───────────┬──────────────────┘                      │
+│                                           │                                         │
+│                                           │                                         │
+│                                ┌──────────▼───────┐                                 │
+│                                │  Fraud Service   │                                 │
+│                                │      :3003       │                                 │
+│                                │                  │                                 │
+│                                │  ┌────────────┐  │            ┌──────────────┐     │
+│                                │  │   Fraud    │  │            │   Fraud DB   │     │
+│                                │  │   Rules    │  │───────────►│   (Alerts)   │     │
+│                                │  │   Engine   │  │            │    :5434     │     │
+│                                │  └────────────┘  │            └──────────────┘     │
+│                                └──────────────────┘                                 │
 │                                                                                     │
 └─────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -325,7 +347,67 @@ The transfer operation implements the **Saga Pattern** to handle distributed tra
 | `FAILED` | Transfer failed (with or without compensation) |
 
 
-### 8. Idempotency with Redis
+### 8. Fraud Detection Service
+
+**Decision:** Separate fraud detection service consuming wallet events for real-time analysis.
+
+**Reasoning:**
+- Decouples fraud detection from transaction processing
+- Fraud rules can be updated without affecting core wallet operations
+- Independent scaling based on fraud analysis load
+- Uses `json-rules-engine` for flexible, configurable rule evaluation
+
+**Fraud Detection Rules:**
+
+| Rule | Trigger | Severity | Description |
+|------|---------|----------|-------------|
+| Large Transaction | Amount > $10,000 | HIGH | Flags unusually large transactions |
+| High Velocity | > 5 transactions in 10 min | MEDIUM | Detects rapid transaction patterns |
+| Rapid Withdrawal | Withdrawal within 5 min of deposit | HIGH | Detects deposit-then-withdraw pattern |
+
+**Risk Scoring System:**
+
+| Alert Severity | Score Increase |
+|----------------|----------------|
+| LOW | +5 |
+| MEDIUM | +15 |
+| HIGH | +30 |
+| CRITICAL | +50 |
+
+| Risk Level | Score Range |
+|------------|-------------|
+| LOW | 0-25 |
+| MEDIUM | 26-50 |
+| HIGH | 51-75 |
+| CRITICAL | 76-100 |
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                              FRAUD DETECTION FLOW                                   │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+    Wallet Event              Fraud Service              Alert/Risk Update
+         │                         │                          │
+         ▼                         ▼                          ▼
+   ┌───────────┐           ┌──────────────────┐        ┌──────────────────┐
+   │ MoneyDep. │           │  FraudConsumer   │        │  Alert Created   │
+   │ MoneyWith │ ────────► │                  │ ─────► │  Risk Updated    │
+   │ Transfer  │           │  Rules Engine    │        │                  │
+   └───────────┘           └──────────────────┘        └──────────────────┘
+        │                          │                          ▲
+        │    RabbitMQ              │                          │
+        │ fraud.events.queue       │                          │
+        │                          ▼                          │
+        │                  ┌──────────────────┐               │
+        └─────────────────►│ json-rules-engine│               │
+                           │                  │               │
+                           │ • Large Tx Check │───────────────┘               
+                           │ • Velocity Check │
+                           │ • Rapid Withdraw │
+                           └──────────────────┘
+```
+
+### 9. Idempotency with Redis
 
 **Decision:** Use Redis for idempotency key tracking to prevent duplicate request processing.
 
@@ -487,6 +569,46 @@ transaction_read_model (
 )
 ```
 
+### Fraud Database (postgres-fraud:5434)
+
+**Risk Profiles:**
+```sql
+risk_profiles (
+  wallet_id    VARCHAR(255) PRIMARY KEY,
+  risk_score   INTEGER DEFAULT 0,          -- 0-100 score
+  risk_level   risk_level DEFAULT 'LOW',   -- LOW, MEDIUM, HIGH, CRITICAL
+  alert_count  INTEGER DEFAULT 0,
+  last_updated TIMESTAMPTZ
+)
+```
+
+**Fraud Alerts:**
+```sql
+alerts (
+  id             UUID PRIMARY KEY,
+  wallet_id      VARCHAR(255),
+  rule_id        VARCHAR(255),         -- e.g., 'large-transaction'
+  rule_name      VARCHAR(255),         -- e.g., 'Large Transaction Alert'
+  severity       alert_severity,       -- LOW, MEDIUM, HIGH, CRITICAL
+  transaction_id VARCHAR(255),
+  event_type     VARCHAR(255),
+  event_data     JSONB,
+  created_at     TIMESTAMPTZ
+)
+```
+
+**Recent Events (for velocity tracking):**
+```sql
+recent_events (
+  id             UUID PRIMARY KEY,
+  wallet_id      VARCHAR(255),
+  event_type     VARCHAR(255),
+  amount         DECIMAL(15,2),
+  transaction_id VARCHAR(255),
+  created_at     TIMESTAMPTZ
+)
+```
+
 ---
 
 ## Components
@@ -520,6 +642,15 @@ transaction_read_model (
 | Read Repository | CRUD operations on read model tables |
 | Controller | Responds to balance/transaction queries |
 
+### Fraud Service
+
+| Component | Purpose |
+|-----------|---------|
+| FraudEventConsumer | Consumes wallet events from RabbitMQ (fraud.events.queue) |
+| FraudRulesService | Evaluates fraud rules using json-rules-engine |
+| RiskProfileService | Manages wallet risk scores and levels |
+| FraudRepository | CRUD for alerts, risk profiles, and recent events |
+
 ---
 
 ## Event Types
@@ -544,6 +675,12 @@ transaction_read_model (
 | SourceWalletRefunded | Source wallet refunded | sagaId, walletId, amount, transactionId, timestamp |
 | TransferFailed | Transfer failed | sagaId, fromWalletId, toWalletId, amount, reason, timestamp |
 
+### Fraud Events
+
+| Event | Description | Data |
+|-------|-------------|------|
+| FraudAlertCreated | Fraud rule triggered | alertId, walletId, ruleId, ruleName, severity, transactionId, timestamp |
+| RiskProfileUpdated | Risk score changed | walletId, oldScore, newScore, oldLevel, newLevel, timestamp |
 
 ---
 
@@ -556,8 +693,11 @@ wallet-system/
 │   ├── command-service/    # Handles writes (port 3001)
 │   │   ├── publishers/     # RabbitMQ event publishers
 │   │   └── sagas/          # Saga orchestrators
-│   └── query-service/      # Handles reads (port 3002)
-│       └── consumers/      # RabbitMQ event consumers
+│   ├── query-service/      # Handles reads (port 3002)
+│   │   └── consumers/      # RabbitMQ event consumers
+│   └── fraud-service/      # Fraud detection (port 3003)
+│       ├── consumers/      # RabbitMQ event consumers
+│       └── services/       # FraudRulesService, RiskProfileService
 ├── libs/
 │   └── shared/
 │       ├── dto/            # Data transfer objects
@@ -573,6 +713,7 @@ wallet-system/
 ├── docker-compose.yml
 ├── init-write.sql          # Event store + saga schema
 ├── init-read.sql           # Read model schema
+├── init-fraud.sql          # Fraud detection schema
 └── README.md
 ```
 
@@ -595,12 +736,12 @@ wallet-system/
 | Dead Letter Queue | ✅ | Failed messages routed to wallet.events.dlq |
 | Transfer Saga | ✅ | Saga pattern with compensation for distributed transfer transactions |
 | Idempotency | ✅ | Redis-based idempotency with `x-idempotency-key` header, guard + interceptor pattern |
+| Fraud Detection | ✅ | Real-time fraud analysis with json-rules-engine, risk profiles, and alerts |
 
 ### ⏳ Pending
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
-| Async Background Worker | ⏳ | Need separate consumer service with business logic |
 | Snapshots | ⏳ | Need snapshot table for aggregate performance |
 | Test Suite | ⏳ | Need comprehensive tests |
 | Configuration | ⏳ | Need centralized config management |

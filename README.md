@@ -11,6 +11,7 @@ An event-driven distributed Wallet Microservice built using **NestJS microservic
 - **Transfer** - Move funds between wallets
 - **Balance** - Query current wallet balance
 - **History** - View transaction history
+- **Fraud Detection** - Real-time fraud analysis with configurable rules
 
 ---
 
@@ -68,14 +69,16 @@ docker-compose up -d
 This starts:
 - PostgreSQL (Write) on port 5432 - Event store database
 - PostgreSQL (Read) on port 5433 - Read model projections database
+- PostgreSQL (Fraud) on port 5434 - Fraud detection database
 - RabbitMQ on port 5672 (AMQP) and 15672 (Management UI)
+- Redis on port 6379 - Idempotency key storage
 
 **RabbitMQ Management UI:**
 Open http://localhost:15672 (credentials: wallet_user / wallet_password)
 
 ### 4. Start Services
 
-Open 3 terminal windows:
+Open 4 terminal windows:
 
 ```bash
 # Terminal 1 - Command Service
@@ -84,7 +87,10 @@ npm run start:dev command-service
 # Terminal 2 - Query Service
 npm run start:dev query-service
 
-# Terminal 3 - API Gateway
+# Terminal 3 - Fraud Service
+npm run start:dev fraud-service
+
+# Terminal 4 - API Gateway
 npm run start:dev api-gateway
 ```
 
@@ -160,6 +166,17 @@ SELECT * FROM wallet_read_model;
 
 # View transactions
 SELECT * FROM transaction_read_model ORDER BY timestamp;
+```
+
+```bash
+# Connect to Fraud Database
+docker exec -it wallet-postgres-fraud psql -U wallet_user -d wallet_fraud_db
+
+# View fraud alerts
+SELECT * FROM alerts ORDER BY created_at DESC;
+
+# View risk profiles
+SELECT * FROM risk_profiles;
 ```
 
 ---
