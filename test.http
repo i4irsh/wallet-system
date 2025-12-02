@@ -6,6 +6,7 @@ GET http://localhost:3000/ping
 
 POST http://localhost:3000/deposit
 Content-Type: application/json
+x-idempotency-key: 1234567890
 
 { 
     "walletId": "wallet-123", 
