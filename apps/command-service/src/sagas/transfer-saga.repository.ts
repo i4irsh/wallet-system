@@ -39,10 +39,7 @@ export class TransferSagaRepository {
     });
   }
 
-  async setSourceDebited(
-    id: string,
-    debitTransactionId: string,
-  ): Promise<void> {
+  async setSourceDebited(id: string, debitTransactionId: string): Promise<void> {
     await this.updateStatus(id, TransferSagaStatus.SOURCE_DEBITED, {
       debitTransactionId,
     });
@@ -60,10 +57,7 @@ export class TransferSagaRepository {
     });
   }
 
-  async setFailed(
-    id: string,
-    compensationTransactionId: string,
-  ): Promise<void> {
+  async setFailed(id: string, compensationTransactionId: string): Promise<void> {
     await this.updateStatus(id, TransferSagaStatus.FAILED, {
       compensationTransactionId,
     });

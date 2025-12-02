@@ -16,10 +16,7 @@ export class WalletReadRepository {
     return this.walletRepository.findOne({ where: { id: walletId } });
   }
 
-  async upsertWallet(
-    walletId: string,
-    balance: number,
-  ): Promise<WalletReadEntity> {
+  async upsertWallet(walletId: string, balance: number): Promise<WalletReadEntity> {
     let wallet = await this.findById(walletId);
 
     if (!wallet) {

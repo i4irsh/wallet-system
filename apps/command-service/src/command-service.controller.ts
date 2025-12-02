@@ -15,22 +15,16 @@ export class CommandServiceController {
 
   @MessagePattern({ cmd: 'deposit' })
   async deposit(@Payload() data: DepositDto) {
-    return this.commandBus.execute(
-      new DepositCommand(data.walletId, data.amount),
-    );
+    return this.commandBus.execute(new DepositCommand(data.walletId, data.amount));
   }
 
   @MessagePattern({ cmd: 'withdraw' })
   async withdraw(@Payload() data: WithdrawDto) {
-    return this.commandBus.execute(
-      new WithdrawCommand(data.walletId, data.amount),
-    );
+    return this.commandBus.execute(new WithdrawCommand(data.walletId, data.amount));
   }
 
   @MessagePattern({ cmd: 'transfer' })
   async transfer(@Payload() data: TransferDto) {
-    return this.commandBus.execute(
-      new TransferCommand(data.fromWalletId, data.toWalletId, data.amount),
-    );
+    return this.commandBus.execute(new TransferCommand(data.fromWalletId, data.toWalletId, data.amount));
   }
 }

@@ -19,12 +19,7 @@ export class EventStoreService {
     private readonly eventStoreRepository: Repository<EventStoreEntity>,
   ) {}
 
-  async saveEvents(
-    aggregateId: string,
-    aggregateType: string,
-    events: any[],
-    expectedVersion: number,
-  ): Promise<void> {
+  async saveEvents(aggregateId: string, aggregateType: string, events: any[], expectedVersion: number): Promise<void> {
     let version = expectedVersion;
 
     const eventEntities = events.map((event) => {

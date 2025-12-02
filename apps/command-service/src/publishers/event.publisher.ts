@@ -19,9 +19,7 @@ export class EventPublisherService {
       data,
       publishedAt: new Date().toISOString(),
     });
-    this.logger.log(
-      `Published MoneyDepositedEvent for wallet ${data.walletId}`,
-    );
+    this.logger.log(`Published MoneyDepositedEvent for wallet ${data.walletId}`);
   }
 
   async publishMoneyWithdrawn(data: {
@@ -36,9 +34,7 @@ export class EventPublisherService {
       data,
       publishedAt: new Date().toISOString(),
     });
-    this.logger.log(
-      `Published MoneyWithdrawnEvent for wallet ${data.walletId}`,
-    );
+    this.logger.log(`Published MoneyWithdrawnEvent for wallet ${data.walletId}`);
   }
 
   // Saga events
@@ -70,9 +66,7 @@ export class EventPublisherService {
       data,
       publishedAt: new Date().toISOString(),
     });
-    this.logger.log(
-      `Published SourceWalletDebitedEvent for saga ${data.sagaId}`,
-    );
+    this.logger.log(`Published SourceWalletDebitedEvent for saga ${data.sagaId}`);
   }
 
   async publishDestinationWalletCredited(data: {
@@ -88,9 +82,7 @@ export class EventPublisherService {
       data,
       publishedAt: new Date().toISOString(),
     });
-    this.logger.log(
-      `Published DestinationWalletCreditedEvent for saga ${data.sagaId}`,
-    );
+    this.logger.log(`Published DestinationWalletCreditedEvent for saga ${data.sagaId}`);
   }
 
   async publishTransferCompleted(data: {
@@ -133,17 +125,12 @@ export class EventPublisherService {
     reason: string;
     timestamp: Date;
   }): Promise<void> {
-    await this.rabbitMQService.publish(
-      'wallet.transfer.compensation.initiated',
-      {
-        eventType: 'CompensationInitiatedEvent',
-        data,
-        publishedAt: new Date().toISOString(),
-      },
-    );
-    this.logger.log(
-      `Published CompensationInitiatedEvent for saga ${data.sagaId}`,
-    );
+    await this.rabbitMQService.publish('wallet.transfer.compensation.initiated', {
+      eventType: 'CompensationInitiatedEvent',
+      data,
+      publishedAt: new Date().toISOString(),
+    });
+    this.logger.log(`Published CompensationInitiatedEvent for saga ${data.sagaId}`);
   }
 
   async publishSourceWalletRefunded(data: {
@@ -159,9 +146,7 @@ export class EventPublisherService {
       data,
       publishedAt: new Date().toISOString(),
     });
-    this.logger.log(
-      `Published SourceWalletRefundedEvent for saga ${data.sagaId}`,
-    );
+    this.logger.log(`Published SourceWalletRefundedEvent for saga ${data.sagaId}`);
   }
 
   // Keep backward compatibility - this combines the transfer into one event for read model
@@ -174,16 +159,11 @@ export class EventPublisherService {
     fromBalanceAfter: number;
     toBalanceAfter: number;
   }): Promise<void> {
-    await this.rabbitMQService.publish(
-      RABBITMQ_ROUTING_KEYS.MONEY_TRANSFERRED,
-      {
-        eventType: 'MoneyTransferredEvent',
-        data,
-        publishedAt: new Date().toISOString(),
-      },
-    );
-    this.logger.log(
-      `Published MoneyTransferredEvent from ${data.fromWalletId} to ${data.toWalletId}`,
-    );
+    await this.rabbitMQService.publish(RABBITMQ_ROUTING_KEYS.MONEY_TRANSFERRED, {
+      eventType: 'MoneyTransferredEvent',
+      data,
+      publishedAt: new Date().toISOString(),
+    });
+    this.logger.log(`Published MoneyTransferredEvent from ${data.fromWalletId} to ${data.toWalletId}`);
   }
 }

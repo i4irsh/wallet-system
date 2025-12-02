@@ -20,9 +20,7 @@ export class IdempotencyService implements OnModuleDestroy {
   private readonly redis: Redis;
   private readonly logger = new Logger(IdempotencyService.name);
 
-  constructor(
-    @Inject('IDEMPOTENCY_CONFIG') private readonly config: IdempotencyConfig,
-  ) {
+  constructor(@Inject('IDEMPOTENCY_CONFIG') private readonly config: IdempotencyConfig) {
     this.redis = new Redis({
       host: config.host,
       port: config.port,
@@ -59,9 +57,7 @@ export class IdempotencyService implements OnModuleDestroy {
    * - { isDuplicate: true, status: 'IN_PROGRESS' } if request is being processed
    * - { isDuplicate: true, status: 'COMPLETED', response } if request was already completed
    */
-  async checkAndLock(
-    idempotencyKey: string,
-  ): Promise<{
+  async checkAndLock(idempotencyKey: string): Promise<{
     isDuplicate: boolean;
     status?: IdempotencyStatus;
     response?: any;
@@ -88,13 +84,7 @@ export class IdempotencyService implements OnModuleDestroy {
       createdAt: new Date().toISOString(),
     };
 
-    const acquired = await this.redis.set(
-      key,
-      JSON.stringify(record),
-      'EX',
-      this.config.ttlSeconds,
-      'NX',
-    );
+    const acquired = await this.redis.set(key, JSON.stringify(record), 'EX', this.config.ttlSeconds, 'NX');
 
     if (acquired) {
       this.logger.debug(`Acquired idempotency lock for key: ${idempotencyKey}`);
@@ -130,12 +120,7 @@ export class IdempotencyService implements OnModuleDestroy {
       completedAt: new Date().toISOString(),
     };
 
-    await this.redis.set(
-      key,
-      JSON.stringify(record),
-      'EX',
-      this.config.ttlSeconds,
-    );
+    await this.redis.set(key, JSON.stringify(record), 'EX', this.config.ttlSeconds);
 
     this.logger.debug(`Marked idempotency key as completed: ${idempotencyKey}`);
   }

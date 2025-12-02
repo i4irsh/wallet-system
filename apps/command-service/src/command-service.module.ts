@@ -1,13 +1,7 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import {
-  EventStoreModule,
-  EventStoreEntity,
-  RabbitMQModule,
-  getRabbitMQConfig,
-  TransferSagaEntity,
-} from '@app/shared';
+import { EventStoreModule, EventStoreEntity, RabbitMQModule, getRabbitMQConfig, TransferSagaEntity } from '@app/shared';
 import { CommandServiceController } from './command-service.controller';
 import { CommandHandlers } from './handlers';
 import { WalletRepository } from './repositories/wallet.repository';
@@ -33,12 +27,6 @@ import { TransferSagaService } from './sagas/transfer-saga.service';
     RabbitMQModule.forRoot(getRabbitMQConfig()),
   ],
   controllers: [CommandServiceController],
-  providers: [
-    ...CommandHandlers,
-    WalletRepository,
-    EventPublisherService,
-    TransferSagaRepository,
-    TransferSagaService,
-  ],
+  providers: [...CommandHandlers, WalletRepository, EventPublisherService, TransferSagaRepository, TransferSagaService],
 })
 export class CommandServiceModule {}

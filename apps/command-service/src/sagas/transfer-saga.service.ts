@@ -1,10 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID as uuid } from 'crypto';
-import {
-  TransferSagaStatus,
-  MoneyWithdrawnEvent,
-  MoneyDepositedEvent,
-} from '@app/shared';
+import { TransferSagaStatus, MoneyWithdrawnEvent, MoneyDepositedEvent } from '@app/shared';
 import { WalletRepository } from '../repositories/wallet.repository';
 import { TransferSagaRepository } from './transfer-saga.repository';
 import { EventPublisherService } from '../publishers/event.publisher';
@@ -28,16 +24,10 @@ export class TransferSagaService {
     private readonly eventPublisher: EventPublisherService,
   ) {}
 
-  async execute(
-    fromWalletId: string,
-    toWalletId: string,
-    amount: number,
-  ): Promise<TransferResult> {
+  async execute(fromWalletId: string, toWalletId: string, amount: number): Promise<TransferResult> {
     const sagaId = uuid();
 
-    this.logger.log(
-      `Starting transfer saga ${sagaId}: ${fromWalletId} -> ${toWalletId}, amount: ${amount}`,
-    );
+    this.logger.log(`Starting transfer saga ${sagaId}: ${fromWalletId} -> ${toWalletId}, amount: ${amount}`);
 
     // Step 1: Initialize saga
     await this.sagaRepository.create({
@@ -71,13 +61,9 @@ export class TransferSagaService {
     } catch (error) {
       this.logger.error(`Saga ${sagaId}: Failed to debit source wallet`, error);
 
-      await this.sagaRepository.updateStatus(
-        sagaId,
-        TransferSagaStatus.FAILED,
-        {
-          errorMessage: error.message,
-        },
-      );
+      await this.sagaRepository.updateStatus(sagaId, TransferSagaStatus.FAILED, {
+        errorMessage: error.message,
+      });
 
       await this.eventPublisher.publishTransferFailed({
         sagaId,
@@ -98,11 +84,7 @@ export class TransferSagaService {
 
     // Step 3: Credit destination wallet
     try {
-      const result = await this.creditDestinationWallet(
-        sagaId,
-        toWalletId,
-        amount,
-      );
+      const result = await this.creditDestinationWallet(sagaId, toWalletId, amount);
 
       await this.sagaRepository.setCompleted(sagaId, result.transactionId);
 
@@ -126,10 +108,7 @@ export class TransferSagaService {
         toBalance: result.balance,
       };
     } catch (error) {
-      this.logger.error(
-        `Saga ${sagaId}: Failed to credit destination wallet, initiating compensation`,
-        error,
-      );
+      this.logger.error(`Saga ${sagaId}: Failed to credit destination wallet, initiating compensation`, error);
 
       // Step 4: Compensate - refund source wallet
       await this.sagaRepository.setCompensating(sagaId, error.message);
@@ -143,20 +122,11 @@ export class TransferSagaService {
       });
 
       try {
-        const compensationResult = await this.compensateSourceWallet(
-          sagaId,
-          fromWalletId,
-          amount,
-        );
+        const compensationResult = await this.compensateSourceWallet(sagaId, fromWalletId, amount);
 
-        await this.sagaRepository.setFailed(
-          sagaId,
-          compensationResult.transactionId,
-        );
+        await this.sagaRepository.setFailed(sagaId, compensationResult.transactionId);
 
-        this.logger.log(
-          `Saga ${sagaId}: Compensation completed, transfer failed`,
-        );
+        this.logger.log(`Saga ${sagaId}: Compensation completed, transfer failed`);
 
         await this.eventPublisher.publishTransferFailed({
           sagaId,
@@ -170,31 +140,22 @@ export class TransferSagaService {
         return {
           success: false,
           sagaId,
-          message:
-            'Transfer failed: Unable to credit destination wallet. Funds refunded.',
+          message: 'Transfer failed: Unable to credit destination wallet. Funds refunded.',
           fromBalance: compensationResult.balance,
           error: error.message,
         };
       } catch (compensationError) {
         // Critical: Compensation failed - needs manual intervention
-        this.logger.error(
-          `Saga ${sagaId}: CRITICAL - Compensation failed!`,
-          compensationError,
-        );
+        this.logger.error(`Saga ${sagaId}: CRITICAL - Compensation failed!`, compensationError);
 
-        await this.sagaRepository.updateStatus(
-          sagaId,
-          TransferSagaStatus.COMPENSATING,
-          {
-            errorMessage: `Compensation failed: ${compensationError.message}`,
-          },
-        );
+        await this.sagaRepository.updateStatus(sagaId, TransferSagaStatus.COMPENSATING, {
+          errorMessage: `Compensation failed: ${compensationError.message}`,
+        });
 
         return {
           success: false,
           sagaId,
-          message:
-            'CRITICAL: Transfer failed and compensation failed. Manual intervention required.',
+          message: 'CRITICAL: Transfer failed and compensation failed. Manual intervention required.',
           error: `Original error: ${error.message}. Compensation error: ${compensationError.message}`,
         };
       }

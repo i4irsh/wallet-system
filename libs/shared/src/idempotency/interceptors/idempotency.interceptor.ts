@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
 import { Observable, tap, catchError } from 'rxjs';
 import { IdempotencyService } from '../idempotency.service';
 
@@ -27,16 +21,12 @@ export class IdempotencyInterceptor implements NestInterceptor {
       tap(async (response) => {
         // Store successful response
         await this.idempotencyService.complete(idempotencyKey, response);
-        this.logger.debug(
-          `Stored response for idempotency key: ${idempotencyKey}`,
-        );
+        this.logger.debug(`Stored response for idempotency key: ${idempotencyKey}`);
       }),
       catchError(async (error) => {
         // Release lock on error to allow retry
         await this.idempotencyService.release(idempotencyKey);
-        this.logger.debug(
-          `Released idempotency key on error: ${idempotencyKey}`,
-        );
+        this.logger.debug(`Released idempotency key on error: ${idempotencyKey}`);
         throw error;
       }),
     );

@@ -1,9 +1,5 @@
 import { AggregateRoot } from '@nestjs/cqrs';
-import {
-  MoneyDepositedEvent,
-  MoneyWithdrawnEvent,
-  MoneyTransferredEvent,
-} from '@app/shared';
+import { MoneyDepositedEvent, MoneyWithdrawnEvent, MoneyTransferredEvent } from '@app/shared';
 import { randomUUID as uuid } from 'crypto';
 
 export class WalletAggregate extends AggregateRoot {
@@ -51,9 +47,7 @@ export class WalletAggregate extends AggregateRoot {
     }
 
     if (this.balance < amount) {
-      throw new Error(
-        `Insufficient funds. Current balance: ${this.balance}, requested: ${amount}`,
-      );
+      throw new Error(`Insufficient funds. Current balance: ${this.balance}, requested: ${amount}`);
     }
 
     const event = new MoneyWithdrawnEvent(this.id, amount, new Date(), uuid());
@@ -69,18 +63,10 @@ export class WalletAggregate extends AggregateRoot {
     }
 
     if (this.balance < amount) {
-      throw new Error(
-        `Insufficient funds. Current balance: ${this.balance}, requested: ${amount}`,
-      );
+      throw new Error(`Insufficient funds. Current balance: ${this.balance}, requested: ${amount}`);
     }
 
-    const event = new MoneyTransferredEvent(
-      this.id,
-      toWalletId,
-      amount,
-      new Date(),
-      uuid(),
-    );
+    const event = new MoneyTransferredEvent(this.id, toWalletId, amount, new Date(), uuid());
 
     this.applyMoneyTransferred(event);
     this.apply(event);

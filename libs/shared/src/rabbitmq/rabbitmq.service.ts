@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  Inject,
-  OnModuleInit,
-  OnModuleDestroy,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Inject, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import * as amqp from 'amqplib';
 import type { RabbitMQConfig } from './rabbitmq.config';
 
@@ -14,9 +8,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   private channel: amqp.Channel;
   private readonly logger = new Logger(RabbitMQService.name);
 
-  constructor(
-    @Inject('RABBITMQ_CONFIG') private readonly config: RabbitMQConfig,
-  ) {}
+  constructor(@Inject('RABBITMQ_CONFIG') private readonly config: RabbitMQConfig) {}
 
   async onModuleInit(): Promise<void> {
     await this.connect();
@@ -32,24 +24,16 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       this.channel = await this.connection.createChannel();
 
       // Set up Dead Letter Exchange
-      await this.channel.assertExchange(
-        `${this.config.exchange}.dlx`,
-        'direct',
-        {
-          durable: true,
-        },
-      );
+      await this.channel.assertExchange(`${this.config.exchange}.dlx`, 'direct', {
+        durable: true,
+      });
 
       // Set up Dead Letter Queue
       await this.channel.assertQueue(this.config.deadLetterQueue, {
         durable: true,
       });
 
-      await this.channel.bindQueue(
-        this.config.deadLetterQueue,
-        `${this.config.exchange}.dlx`,
-        'dead-letter',
-      );
+      await this.channel.bindQueue(this.config.deadLetterQueue, `${this.config.exchange}.dlx`, 'dead-letter');
 
       // Set up main exchange (topic for flexible routing)
       await this.channel.assertExchange(this.config.exchange, 'topic', {
@@ -66,11 +50,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       });
 
       // Bind queue to exchange for all wallet events
-      await this.channel.bindQueue(
-        this.config.queue,
-        this.config.exchange,
-        'wallet.#',
-      );
+      await this.channel.bindQueue(this.config.queue, this.config.exchange, 'wallet.#');
 
       this.logger.log('Connected to RabbitMQ');
     } catch (error) {
@@ -107,11 +87,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   }
 
   async consume(
-    callback: (
-      message: any,
-      ack: () => void,
-      nack: (requeue?: boolean) => void,
-    ) => Promise<void>,
+    callback: (message: any, ack: () => void, nack: (requeue?: boolean) => void) => Promise<void>,
   ): Promise<void> {
     await this.channel.prefetch(1);
 
@@ -124,8 +100,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
           const content = JSON.parse(msg.content.toString());
 
           const ack = () => this.channel.ack(msg);
-          const nack = (requeue = false) =>
-            this.channel.nack(msg, false, requeue);
+          const nack = (requeue = false) => this.channel.nack(msg, false, requeue);
 
           await callback(content, ack, nack);
         } catch (error) {

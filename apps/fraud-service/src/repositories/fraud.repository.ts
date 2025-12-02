@@ -1,13 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
-import {
-  AlertEntity,
-  AlertSeverity,
-  RiskProfileEntity,
-  RiskLevel,
-  RecentEventEntity,
-} from '../entities';
+import { AlertEntity, AlertSeverity, RiskProfileEntity, RiskLevel, RecentEventEntity } from '../entities';
 
 interface CreateAlertDto {
   walletId: string;
@@ -58,9 +52,7 @@ export class FraudRepository {
     });
 
     const savedAlert = await this.alertRepository.save(alert);
-    this.logger.debug(
-      `Created alert ${savedAlert.id} for wallet ${dto.walletId}`,
-    );
+    this.logger.debug(`Created alert ${savedAlert.id} for wallet ${dto.walletId}`);
     return savedAlert;
   }
 
@@ -89,10 +81,7 @@ export class FraudRepository {
     return this.riskProfileRepository.save(profile);
   }
 
-  async updateRiskProfile(
-    walletId: string,
-    dto: UpdateRiskProfileDto,
-  ): Promise<void> {
+  async updateRiskProfile(walletId: string, dto: UpdateRiskProfileDto): Promise<void> {
     await this.riskProfileRepository.update(
       { walletId },
       {
@@ -114,16 +103,11 @@ export class FraudRepository {
     });
 
     await this.recentEventRepository.save(event);
-    this.logger.debug(
-      `Tracked event ${dto.eventType} for wallet ${dto.walletId}`,
-    );
+    this.logger.debug(`Tracked event ${dto.eventType} for wallet ${dto.walletId}`);
   }
 
   // Methods for fraud rule evaluation
-  async getRecentTransactionCount(
-    walletId: string,
-    windowMinutes: number,
-  ): Promise<number> {
+  async getRecentTransactionCount(walletId: string, windowMinutes: number): Promise<number> {
     const since = new Date(Date.now() - windowMinutes * 60 * 1000);
 
     const count = await this.recentEventRepository.count({
@@ -136,10 +120,7 @@ export class FraudRepository {
     return count;
   }
 
-  async hasRecentDeposit(
-    walletId: string,
-    windowMinutes: number,
-  ): Promise<boolean> {
+  async hasRecentDeposit(walletId: string, windowMinutes: number): Promise<boolean> {
     const since = new Date(Date.now() - windowMinutes * 60 * 1000);
 
     const depositEvent = await this.recentEventRepository.findOne({
@@ -153,10 +134,7 @@ export class FraudRepository {
     return depositEvent !== null;
   }
 
-  async getRecentAlerts(
-    walletId: string,
-    windowMinutes: number,
-  ): Promise<AlertEntity[]> {
+  async getRecentAlerts(walletId: string, windowMinutes: number): Promise<AlertEntity[]> {
     const since = new Date(Date.now() - windowMinutes * 60 * 1000);
 
     return this.alertRepository.find({

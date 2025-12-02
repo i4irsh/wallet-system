@@ -6,8 +6,4 @@ import { DepositHandler } from './deposit.handler';
 import { WithdrawHandler } from './withdraw.handler';
 import { TransferHandler } from './transfer.handler';
 
-export const CommandHandlers = [
-  DepositHandler,
-  WithdrawHandler,
-  TransferHandler,
-];
+export const CommandHandlers = [DepositHandler, WithdrawHandler, TransferHandler];

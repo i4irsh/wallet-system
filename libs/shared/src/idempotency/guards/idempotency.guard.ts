@@ -1,17 +1,7 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  HttpException,
-  HttpStatus,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { IdempotencyService, IdempotencyStatus } from '../idempotency.service';
-import {
-  IDEMPOTENCY_KEY_HEADER,
-  REQUIRE_IDEMPOTENCY_KEY,
-} from '../idempotency.decorator';
+import { IDEMPOTENCY_KEY_HEADER, REQUIRE_IDEMPOTENCY_KEY } from '../idempotency.decorator';
 
 @Injectable()
 export class IdempotencyGuard implements CanActivate {
@@ -27,10 +17,10 @@ export class IdempotencyGuard implements CanActivate {
     const response = context.switchToHttp().getResponse();
 
     // Check if route requires idempotency
-    const requireIdempotency = this.reflector.getAllAndOverride<boolean>(
-      REQUIRE_IDEMPOTENCY_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const requireIdempotency = this.reflector.getAllAndOverride<boolean>(REQUIRE_IDEMPOTENCY_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     const idempotencyKey = request.headers[IDEMPOTENCY_KEY_HEADER];
 
@@ -48,9 +38,7 @@ export class IdempotencyGuard implements CanActivate {
 
     // If no idempotency key provided and not required, allow request
     if (!idempotencyKey) {
-      this.logger.debug(
-        'No idempotency key provided, proceeding without check',
-      );
+      this.logger.debug('No idempotency key provided, proceeding without check');
       return true;
     }
 
@@ -78,9 +66,7 @@ export class IdempotencyGuard implements CanActivate {
 
     if (result.status === IdempotencyStatus.COMPLETED) {
       // Return cached response
-      this.logger.log(
-        `Returning cached response for idempotency key: ${idempotencyKey}`,
-      );
+      this.logger.log(`Returning cached response for idempotency key: ${idempotencyKey}`);
 
       // Set response headers and body
       response.status(HttpStatus.OK).json({

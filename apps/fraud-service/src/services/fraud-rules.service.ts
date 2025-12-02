@@ -131,11 +131,10 @@ export class FraudRulesService implements OnModuleInit {
 
     try {
       // Calculate dynamic facts
-      const recentTransactionCount =
-        await this.fraudRepository.getRecentTransactionCount(
-          context.walletId,
-          this.VELOCITY_TIME_WINDOW_MINUTES,
-        );
+      const recentTransactionCount = await this.fraudRepository.getRecentTransactionCount(
+        context.walletId,
+        this.VELOCITY_TIME_WINDOW_MINUTES,
+      );
 
       const hasRecentDeposit = await this.fraudRepository.hasRecentDeposit(
         context.walletId,
@@ -176,9 +175,7 @@ export class FraudRulesService implements OnModuleInit {
             severity: params.severity,
           });
 
-          this.logger.warn(
-            `Rule triggered: ${params.ruleName} - ${params.message}`,
-          );
+          this.logger.warn(`Rule triggered: ${params.ruleName} - ${params.message}`);
         }
       }
     } catch (error) {

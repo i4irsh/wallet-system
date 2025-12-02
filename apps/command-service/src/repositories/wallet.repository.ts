@@ -1,11 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { EventPublisher } from '@nestjs/cqrs';
-import {
-  EventStoreService,
-  MoneyDepositedEvent,
-  MoneyWithdrawnEvent,
-  MoneyTransferredEvent,
-} from '@app/shared';
+import { EventStoreService, MoneyDepositedEvent, MoneyWithdrawnEvent, MoneyTransferredEvent } from '@app/shared';
 import { WalletAggregate } from '../aggregates/wallet.aggregate';
 
 @Injectable()
@@ -23,10 +18,7 @@ export class WalletRepository {
 
     // Replay events to rebuild state
     for (const storedEvent of events) {
-      const event = this.deserializeEvent(
-        storedEvent.eventType,
-        storedEvent.eventData,
-      );
+      const event = this.deserializeEvent(storedEvent.eventType, storedEvent.eventData);
       if (event) {
         wallet.replayEvent(event);
       }
@@ -58,10 +50,7 @@ export class WalletRepository {
     wallet.commit();
   }
 
-  private deserializeEvent(
-    eventType: string,
-    eventData: Record<string, any>,
-  ): any {
+  private deserializeEvent(eventType: string, eventData: Record<string, any>): any {
     switch (eventType) {
       case 'MoneyDepositedEvent':
         return new MoneyDepositedEvent(

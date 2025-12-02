@@ -11,9 +11,7 @@ describe('CommandServiceController', () => {
       providers: [CommandServiceService],
     }).compile();
 
-    commandServiceController = app.get<CommandServiceController>(
-      CommandServiceController,
-    );
+    commandServiceController = app.get<CommandServiceController>(CommandServiceController);
   });
 
   describe('root', () => {

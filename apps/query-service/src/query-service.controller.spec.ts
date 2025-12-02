@@ -11,9 +11,7 @@ describe('QueryServiceController', () => {
       providers: [QueryServiceService],
     }).compile();
 
-    queryServiceController = app.get<QueryServiceController>(
-      QueryServiceController,
-    );
+    queryServiceController = app.get<QueryServiceController>(QueryServiceController);
   });
 
   describe('root', () => {

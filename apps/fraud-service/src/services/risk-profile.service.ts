@@ -24,10 +24,7 @@ export class RiskProfileService {
 
   constructor(private readonly fraudRepository: FraudRepository) {}
 
-  async updateRiskProfile(
-    walletId: string,
-    alertSeverity: AlertSeverity,
-  ): Promise<void> {
+  async updateRiskProfile(walletId: string, alertSeverity: AlertSeverity): Promise<void> {
     try {
       // Get or create risk profile
       let profile = await this.fraudRepository.getRiskProfile(walletId);
@@ -54,10 +51,7 @@ export class RiskProfileService {
         `Updated risk profile for wallet ${walletId}: score ${profile.riskScore} -> ${newScore}, level ${profile.riskLevel} -> ${newLevel}`,
       );
     } catch (error) {
-      this.logger.error(
-        `Error updating risk profile for wallet ${walletId}`,
-        error,
-      );
+      this.logger.error(`Error updating risk profile for wallet ${walletId}`, error);
       throw error;
     }
   }

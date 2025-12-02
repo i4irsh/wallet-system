@@ -11,9 +11,7 @@ export class DepositHandler implements ICommandHandler<DepositCommand> {
     private readonly eventPublisher: EventPublisherService,
   ) {}
 
-  async execute(
-    command: DepositCommand,
-  ): Promise<{ success: boolean; message: string; balance: number }> {
+  async execute(command: DepositCommand): Promise<{ success: boolean; message: string; balance: number }> {
     const { walletId, amount } = command;
 
     const wallet = await this.walletRepository.findById(walletId);
@@ -22,9 +20,7 @@ export class DepositHandler implements ICommandHandler<DepositCommand> {
 
     // Capture event before save (commit clears uncommitted events)
     const uncommittedEvents = wallet.getUncommittedEvents();
-    const lastEvent = uncommittedEvents[
-      uncommittedEvents.length - 1
-    ] as MoneyDepositedEvent;
+    const lastEvent = uncommittedEvents[uncommittedEvents.length - 1] as MoneyDepositedEvent;
 
     await this.walletRepository.save(wallet);
 

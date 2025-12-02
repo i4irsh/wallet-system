@@ -1,12 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import {
-  IdempotencyModule,
-  getIdempotencyConfig,
-  IdempotencyGuard,
-  IdempotencyInterceptor,
-} from '@app/shared';
+import { IdempotencyModule, getIdempotencyConfig, IdempotencyGuard, IdempotencyInterceptor } from '@app/shared';
 import { ApiGatewayController } from './api-gateway.controller';
 
 @Module({
