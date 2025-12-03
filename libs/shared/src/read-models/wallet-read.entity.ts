@@ -1,6 +1,7 @@
 import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { TABLE_NAMES } from '../constants';
 
-@Entity('wallet_read_model')
+@Entity(TABLE_NAMES.WALLET_READ_MODEL)
 export class WalletReadEntity {
   @PrimaryColumn()
   id: string;

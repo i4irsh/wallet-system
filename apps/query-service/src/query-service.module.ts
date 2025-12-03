@@ -1,7 +1,15 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { WalletReadEntity, TransactionReadEntity, RabbitMQModule, queryServiceConfigSchema, ENV } from '@app/shared';
+import {
+  WalletReadEntity,
+  TransactionReadEntity,
+  RabbitMQModule,
+  queryServiceConfigSchema,
+  ENV,
+  RABBITMQ_EXCHANGES,
+  RABBITMQ_QUEUES,
+} from '@app/shared';
 import { QueryServiceController } from './query-service.controller';
 import { WalletReadRepository } from './repositories/wallet-read.repository';
 import { WalletEventConsumer } from './consumers/wallet-event.consumer';
@@ -35,9 +43,9 @@ import { WalletEventConsumer } from './consumers/wallet-event.consumer';
         port: configService.get<number>(ENV.RABBITMQ_PORT)!,
         username: configService.get<string>(ENV.RABBITMQ_USER)!,
         password: configService.get<string>(ENV.RABBITMQ_PASSWORD)!,
-        exchange: 'wallet.events',
-        queue: 'wallet.events.queue',
-        deadLetterQueue: 'wallet.events.dlq',
+        exchange: RABBITMQ_EXCHANGES.WALLET_EVENTS,
+        queue: RABBITMQ_QUEUES.WALLET_EVENTS,
+        deadLetterQueue: RABBITMQ_QUEUES.WALLET_EVENTS_DLQ,
       }),
       inject: [ConfigService],
     }),

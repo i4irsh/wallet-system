@@ -1,6 +1,7 @@
 import { Entity, PrimaryColumn, Column, CreateDateColumn, Index } from 'typeorm';
+import { TABLE_NAMES } from '../constants';
 
-@Entity('transaction_read_model')
+@Entity(TABLE_NAMES.TRANSACTION_READ_MODEL)
 export class TransactionReadEntity {
   @PrimaryColumn()
   id: string;

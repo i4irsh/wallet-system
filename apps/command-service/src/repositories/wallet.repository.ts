@@ -1,10 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { EventPublisher } from '@nestjs/cqrs';
-import { EventStoreService, MoneyDepositedEvent, MoneyWithdrawnEvent, MoneyTransferredEvent } from '@app/shared';
+import {
+  EventStoreService,
+  MoneyDepositedEvent,
+  MoneyWithdrawnEvent,
+  MoneyTransferredEvent,
+  EVENT_TYPES,
+  AGGREGATE_TYPES,
+} from '@app/shared';
 import { WalletAggregate } from '../aggregates/wallet.aggregate';
 
 @Injectable()
 export class WalletRepository {
+  private readonly logger = new Logger(WalletRepository.name);
+
   constructor(
     private readonly eventStore: EventStoreService,
     private readonly eventPublisher: EventPublisher,
@@ -41,7 +50,7 @@ export class WalletRepository {
     // Save events to event store
     await this.eventStore.saveEvents(
       wallet.getId(),
-      'WalletAggregate',
+      AGGREGATE_TYPES.WALLET,
       uncommittedEvents,
       wallet.getVersion() - uncommittedEvents.length,
     );
@@ -52,21 +61,21 @@ export class WalletRepository {
 
   private deserializeEvent(eventType: string, eventData: Record<string, any>): any {
     switch (eventType) {
-      case 'MoneyDepositedEvent':
+      case EVENT_TYPES.MONEY_DEPOSITED:
         return new MoneyDepositedEvent(
           eventData.walletId,
           eventData.amount,
           new Date(eventData.timestamp),
           eventData.transactionId,
         );
-      case 'MoneyWithdrawnEvent':
+      case EVENT_TYPES.MONEY_WITHDRAWN:
         return new MoneyWithdrawnEvent(
           eventData.walletId,
           eventData.amount,
           new Date(eventData.timestamp),
           eventData.transactionId,
         );
-      case 'MoneyTransferredEvent':
+      case EVENT_TYPES.MONEY_TRANSFERRED:
         return new MoneyTransferredEvent(
           eventData.fromWalletId,
           eventData.toWalletId,
@@ -75,7 +84,7 @@ export class WalletRepository {
           eventData.transactionId,
         );
       default:
-        console.warn(`Unknown event type: ${eventType}`);
+        this.logger.warn(`Unknown event type: ${eventType}`);
         return null;
     }
   }

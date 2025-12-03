@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
-import { RabbitMQService } from '@app/shared';
+import { RabbitMQService, EVENT_TYPES } from '@app/shared';
 import { FraudRulesService } from '../services/fraud-rules.service';
 import { RiskProfileService } from '../services/risk-profile.service';
 import { FraudRepository } from '../repositories/fraud.repository';
@@ -17,6 +17,15 @@ interface WalletEvent {
     [key: string]: any;
   };
 }
+
+// Transactional events that should be processed for fraud detection
+const TRANSACTIONAL_EVENTS = [
+  EVENT_TYPES.MONEY_DEPOSITED,
+  EVENT_TYPES.MONEY_WITHDRAWN,
+  EVENT_TYPES.MONEY_TRANSFERRED,
+  EVENT_TYPES.SOURCE_WALLET_DEBITED,
+  EVENT_TYPES.DESTINATION_WALLET_CREDITED,
+] as const;
 
 @Injectable()
 export class FraudEventConsumer implements OnModuleInit {
@@ -52,15 +61,7 @@ export class FraudEventConsumer implements OnModuleInit {
     const { eventType, data } = message;
 
     // Skip non-transactional events
-    const transactionalEvents = [
-      'MoneyDepositedEvent',
-      'MoneyWithdrawnEvent',
-      'MoneyTransferredEvent',
-      'SourceWalletDebitedEvent',
-      'DestinationWalletCreditedEvent',
-    ];
-
-    if (!transactionalEvents.includes(eventType)) {
+    if (!TRANSACTIONAL_EVENTS.includes(eventType as any)) {
       this.logger.debug(`Skipping non-transactional event: ${eventType}`);
       return;
     }

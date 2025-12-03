@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
-import { RabbitMQService } from '@app/shared';
+import { RabbitMQService, EVENT_TYPES, TRANSACTION_TYPES } from '@app/shared';
 import { WalletReadRepository } from '../repositories/wallet-read.repository';
 
 @Injectable()
@@ -33,34 +33,34 @@ export class WalletEventConsumer implements OnModuleInit {
 
   private async handleEvent(message: { eventType: string; data: any }): Promise<void> {
     switch (message.eventType) {
-      case 'MoneyDepositedEvent':
+      case EVENT_TYPES.MONEY_DEPOSITED:
         await this.handleMoneyDeposited(message.data);
         break;
-      case 'MoneyWithdrawnEvent':
+      case EVENT_TYPES.MONEY_WITHDRAWN:
         await this.handleMoneyWithdrawn(message.data);
         break;
-      case 'MoneyTransferredEvent':
+      case EVENT_TYPES.MONEY_TRANSFERRED:
         await this.handleMoneyTransferred(message.data);
         break;
       // Saga events for read model
-      case 'SourceWalletDebitedEvent':
+      case EVENT_TYPES.SOURCE_WALLET_DEBITED:
         await this.handleSourceWalletDebited(message.data);
         break;
-      case 'DestinationWalletCreditedEvent':
+      case EVENT_TYPES.DESTINATION_WALLET_CREDITED:
         await this.handleDestinationWalletCredited(message.data);
         break;
-      case 'SourceWalletRefundedEvent':
+      case EVENT_TYPES.SOURCE_WALLET_REFUNDED:
         await this.handleSourceWalletRefunded(message.data);
         break;
-      case 'TransferCompletedEvent':
+      case EVENT_TYPES.TRANSFER_COMPLETED:
         await this.handleTransferCompleted(message.data);
         break;
-      case 'TransferFailedEvent':
+      case EVENT_TYPES.TRANSFER_FAILED:
         await this.handleTransferFailed(message.data);
         break;
       // Info events (just log)
-      case 'TransferInitiatedEvent':
-      case 'CompensationInitiatedEvent':
+      case EVENT_TYPES.TRANSFER_INITIATED:
+      case EVENT_TYPES.COMPENSATION_INITIATED:
         this.logger.log(`Info event: ${message.eventType}`, message.data);
         break;
       default:
@@ -75,14 +75,14 @@ export class WalletEventConsumer implements OnModuleInit {
     transactionId: string;
     balanceAfter: number;
   }): Promise<void> {
-    this.logger.debug('Processing MoneyDepositedEvent', data);
+    this.logger.debug(`Processing ${EVENT_TYPES.MONEY_DEPOSITED}`, data);
 
     await this.walletReadRepository.upsertWallet(data.walletId, data.balanceAfter);
 
     await this.walletReadRepository.addTransaction({
       id: data.transactionId,
       walletId: data.walletId,
-      type: 'DEPOSIT',
+      type: TRANSACTION_TYPES.DEPOSIT,
       amount: data.amount,
       balanceAfter: data.balanceAfter,
       timestamp: new Date(data.timestamp),
@@ -96,14 +96,14 @@ export class WalletEventConsumer implements OnModuleInit {
     transactionId: string;
     balanceAfter: number;
   }): Promise<void> {
-    this.logger.debug('Processing MoneyWithdrawnEvent', data);
+    this.logger.debug(`Processing ${EVENT_TYPES.MONEY_WITHDRAWN}`, data);
 
     await this.walletReadRepository.upsertWallet(data.walletId, data.balanceAfter);
 
     await this.walletReadRepository.addTransaction({
       id: data.transactionId,
       walletId: data.walletId,
-      type: 'WITHDRAWAL',
+      type: TRANSACTION_TYPES.WITHDRAWAL,
       amount: data.amount,
       balanceAfter: data.balanceAfter,
       timestamp: new Date(data.timestamp),
@@ -119,7 +119,7 @@ export class WalletEventConsumer implements OnModuleInit {
     fromBalanceAfter: number;
     toBalanceAfter: number;
   }): Promise<void> {
-    this.logger.debug('Processing MoneyTransferredEvent', data);
+    this.logger.debug(`Processing ${EVENT_TYPES.MONEY_TRANSFERRED}`, data);
 
     // Update both wallets
     await this.walletReadRepository.upsertWallet(data.fromWalletId, data.fromBalanceAfter);
@@ -129,7 +129,7 @@ export class WalletEventConsumer implements OnModuleInit {
     await this.walletReadRepository.addTransaction({
       id: `${data.transactionId}-out`,
       walletId: data.fromWalletId,
-      type: 'TRANSFER_OUT',
+      type: TRANSACTION_TYPES.TRANSFER_OUT,
       amount: data.amount,
       balanceAfter: data.fromBalanceAfter,
       relatedWalletId: data.toWalletId,
@@ -139,7 +139,7 @@ export class WalletEventConsumer implements OnModuleInit {
     await this.walletReadRepository.addTransaction({
       id: `${data.transactionId}-in`,
       walletId: data.toWalletId,
-      type: 'TRANSFER_IN',
+      type: TRANSACTION_TYPES.TRANSFER_IN,
       amount: data.amount,
       balanceAfter: data.toBalanceAfter,
       relatedWalletId: data.fromWalletId,
@@ -161,7 +161,7 @@ export class WalletEventConsumer implements OnModuleInit {
     await this.walletReadRepository.addTransaction({
       id: data.transactionId,
       walletId: data.walletId,
-      type: 'TRANSFER_OUT',
+      type: TRANSACTION_TYPES.TRANSFER_OUT,
       amount: data.amount,
       balanceAfter: data.balanceAfter,
       timestamp: new Date(data.timestamp),
@@ -181,7 +181,7 @@ export class WalletEventConsumer implements OnModuleInit {
     await this.walletReadRepository.addTransaction({
       id: data.transactionId,
       walletId: data.walletId,
-      type: 'TRANSFER_IN',
+      type: TRANSACTION_TYPES.TRANSFER_IN,
       amount: data.amount,
       balanceAfter: data.balanceAfter,
       timestamp: new Date(data.timestamp),
@@ -201,7 +201,7 @@ export class WalletEventConsumer implements OnModuleInit {
     await this.walletReadRepository.addTransaction({
       id: data.transactionId,
       walletId: data.walletId,
-      type: 'REFUND',
+      type: TRANSACTION_TYPES.REFUND,
       amount: data.amount,
       balanceAfter: data.balanceAfter,
       timestamp: new Date(data.timestamp),

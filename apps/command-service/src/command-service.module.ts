@@ -9,6 +9,8 @@ import {
   TransferSagaEntity,
   commandServiceConfigSchema,
   ENV,
+  RABBITMQ_EXCHANGES,
+  RABBITMQ_QUEUES,
 } from '@app/shared';
 import { CommandServiceController } from './command-service.controller';
 import { CommandHandlers } from './handlers';
@@ -48,9 +50,9 @@ import { TransferSagaService } from './sagas/transfer-saga.service';
         port: configService.get<number>(ENV.RABBITMQ_PORT)!,
         username: configService.get<string>(ENV.RABBITMQ_USER)!,
         password: configService.get<string>(ENV.RABBITMQ_PASSWORD)!,
-        exchange: 'wallet.events',
-        queue: 'wallet.events.queue',
-        deadLetterQueue: 'wallet.events.dlq',
+        exchange: RABBITMQ_EXCHANGES.WALLET_EVENTS,
+        queue: RABBITMQ_QUEUES.WALLET_EVENTS,
+        deadLetterQueue: RABBITMQ_QUEUES.WALLET_EVENTS_DLQ,
       }),
       inject: [ConfigService],
     }),

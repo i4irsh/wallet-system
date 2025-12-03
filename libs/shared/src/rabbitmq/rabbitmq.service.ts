@@ -1,6 +1,7 @@
 import { Injectable, Inject, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import * as amqp from 'amqplib';
 import type { RabbitMQConfig } from './rabbitmq.config';
+import { RABBITMQ_ROUTING_KEYS } from './rabbitmq.constants';
 
 @Injectable()
 export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
@@ -55,7 +56,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       });
 
       // Bind queue to exchange for all wallet events
-      await this.channel.bindQueue(this.config.queue, this.config.exchange, 'wallet.#');
+      await this.channel.bindQueue(this.config.queue, this.config.exchange, RABBITMQ_ROUTING_KEYS.ALL_EVENTS);
 
       this.logger.log('Connected to RabbitMQ');
     } catch (error) {

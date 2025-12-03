@@ -1,17 +1,18 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
+import { MESSAGE_PATTERNS } from '@app/shared';
 import { WalletReadRepository } from './repositories/wallet-read.repository';
 
 @Controller()
 export class QueryServiceController {
   constructor(private readonly walletReadRepository: WalletReadRepository) {}
 
-  @MessagePattern({ cmd: 'ping' })
+  @MessagePattern({ cmd: MESSAGE_PATTERNS.PING })
   ping(): string {
     return 'pong from query-service';
   }
 
-  @MessagePattern({ cmd: 'get_balance' })
+  @MessagePattern({ cmd: MESSAGE_PATTERNS.GET_BALANCE })
   async getBalance(@Payload() data: { walletId: string }) {
     const wallet = await this.walletReadRepository.findById(data.walletId);
 
@@ -31,7 +32,7 @@ export class QueryServiceController {
     };
   }
 
-  @MessagePattern({ cmd: 'get_transactions' })
+  @MessagePattern({ cmd: MESSAGE_PATTERNS.GET_TRANSACTIONS })
   async getTransactions(@Payload() data: { walletId: string }) {
     const transactions = await this.walletReadRepository.getTransactions(data.walletId);
 

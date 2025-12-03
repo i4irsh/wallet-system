@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index, Unique } from 'typeorm';
+import { TABLE_NAMES } from '../constants';
 
-@Entity('event_store')
+@Entity(TABLE_NAMES.EVENT_STORE)
 @Unique(['aggregateId', 'version'])
 export class EventStoreEntity {
   @PrimaryGeneratedColumn()

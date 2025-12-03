@@ -1,4 +1,5 @@
 import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
+import { TABLE_NAMES } from '../constants';
 
 export enum TransferSagaStatus {
   INITIATED = 'INITIATED',
@@ -8,7 +9,7 @@ export enum TransferSagaStatus {
   FAILED = 'FAILED',
 }
 
-@Entity('transfer_saga')
+@Entity(TABLE_NAMES.TRANSFER_SAGA)
 export class TransferSagaEntity {
   @PrimaryColumn()
   id: string;

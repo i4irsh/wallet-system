@@ -744,6 +744,4 @@ wallet-system/
 |-------------|--------|-------|
 | Snapshots | ⏳ | Need snapshot table for aggregate performance |
 | Test Suite | ⏳ | Need comprehensive tests |
-| Configuration | ⏳ | Need centralized config management |
-| Validation | ⏳ | Need input validation on DTOs |
 

@@ -1,4 +1,5 @@
 import { Entity, Column, PrimaryColumn, UpdateDateColumn } from 'typeorm';
+import { TABLE_NAMES } from '@app/shared';
 
 export enum RiskLevel {
   LOW = 'LOW',
@@ -7,7 +8,7 @@ export enum RiskLevel {
   CRITICAL = 'CRITICAL',
 }
 
-@Entity('risk_profiles')
+@Entity(TABLE_NAMES.RISK_PROFILES)
 export class RiskProfileEntity {
   @PrimaryColumn({ name: 'wallet_id' })
   walletId: string;

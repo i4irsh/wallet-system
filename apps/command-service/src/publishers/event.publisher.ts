@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { RabbitMQService, RABBITMQ_ROUTING_KEYS } from '@app/shared';
+import { RabbitMQService, RABBITMQ_ROUTING_KEYS, EVENT_TYPES } from '@app/shared';
 
 @Injectable()
 export class EventPublisherService {
@@ -15,11 +15,11 @@ export class EventPublisherService {
     balanceAfter: number;
   }): Promise<void> {
     await this.rabbitMQService.publish(RABBITMQ_ROUTING_KEYS.MONEY_DEPOSITED, {
-      eventType: 'MoneyDepositedEvent',
+      eventType: EVENT_TYPES.MONEY_DEPOSITED,
       data,
       publishedAt: new Date().toISOString(),
     });
-    this.logger.log(`Published MoneyDepositedEvent for wallet ${data.walletId}`);
+    this.logger.log(`Published ${EVENT_TYPES.MONEY_DEPOSITED} for wallet ${data.walletId}`);
   }
 
   async publishMoneyWithdrawn(data: {
@@ -30,11 +30,11 @@ export class EventPublisherService {
     balanceAfter: number;
   }): Promise<void> {
     await this.rabbitMQService.publish(RABBITMQ_ROUTING_KEYS.MONEY_WITHDRAWN, {
-      eventType: 'MoneyWithdrawnEvent',
+      eventType: EVENT_TYPES.MONEY_WITHDRAWN,
       data,
       publishedAt: new Date().toISOString(),
     });
-    this.logger.log(`Published MoneyWithdrawnEvent for wallet ${data.walletId}`);
+    this.logger.log(`Published ${EVENT_TYPES.MONEY_WITHDRAWN} for wallet ${data.walletId}`);
   }
 
   // Saga events
@@ -45,12 +45,12 @@ export class EventPublisherService {
     amount: number;
     timestamp: Date;
   }): Promise<void> {
-    await this.rabbitMQService.publish('wallet.transfer.initiated', {
-      eventType: 'TransferInitiatedEvent',
+    await this.rabbitMQService.publish(RABBITMQ_ROUTING_KEYS.TRANSFER_INITIATED, {
+      eventType: EVENT_TYPES.TRANSFER_INITIATED,
       data,
       publishedAt: new Date().toISOString(),
     });
-    this.logger.log(`Published TransferInitiatedEvent for saga ${data.sagaId}`);
+    this.logger.log(`Published ${EVENT_TYPES.TRANSFER_INITIATED} for saga ${data.sagaId}`);
   }
 
   async publishSourceWalletDebited(data: {
@@ -61,12 +61,12 @@ export class EventPublisherService {
     timestamp: Date;
     balanceAfter: number;
   }): Promise<void> {
-    await this.rabbitMQService.publish('wallet.transfer.source.debited', {
-      eventType: 'SourceWalletDebitedEvent',
+    await this.rabbitMQService.publish(RABBITMQ_ROUTING_KEYS.SOURCE_DEBITED, {
+      eventType: EVENT_TYPES.SOURCE_WALLET_DEBITED,
       data,
       publishedAt: new Date().toISOString(),
     });
-    this.logger.log(`Published SourceWalletDebitedEvent for saga ${data.sagaId}`);
+    this.logger.log(`Published ${EVENT_TYPES.SOURCE_WALLET_DEBITED} for saga ${data.sagaId}`);
   }
 
   async publishDestinationWalletCredited(data: {
@@ -77,12 +77,12 @@ export class EventPublisherService {
     timestamp: Date;
     balanceAfter: number;
   }): Promise<void> {
-    await this.rabbitMQService.publish('wallet.transfer.destination.credited', {
-      eventType: 'DestinationWalletCreditedEvent',
+    await this.rabbitMQService.publish(RABBITMQ_ROUTING_KEYS.DESTINATION_CREDITED, {
+      eventType: EVENT_TYPES.DESTINATION_WALLET_CREDITED,
       data,
       publishedAt: new Date().toISOString(),
     });
-    this.logger.log(`Published DestinationWalletCreditedEvent for saga ${data.sagaId}`);
+    this.logger.log(`Published ${EVENT_TYPES.DESTINATION_WALLET_CREDITED} for saga ${data.sagaId}`);
   }
 
   async publishTransferCompleted(data: {
@@ -94,12 +94,12 @@ export class EventPublisherService {
     fromBalanceAfter: number;
     toBalanceAfter: number;
   }): Promise<void> {
-    await this.rabbitMQService.publish('wallet.transfer.completed', {
-      eventType: 'TransferCompletedEvent',
+    await this.rabbitMQService.publish(RABBITMQ_ROUTING_KEYS.TRANSFER_COMPLETED, {
+      eventType: EVENT_TYPES.TRANSFER_COMPLETED,
       data,
       publishedAt: new Date().toISOString(),
     });
-    this.logger.log(`Published TransferCompletedEvent for saga ${data.sagaId}`);
+    this.logger.log(`Published ${EVENT_TYPES.TRANSFER_COMPLETED} for saga ${data.sagaId}`);
   }
 
   async publishTransferFailed(data: {
@@ -110,12 +110,12 @@ export class EventPublisherService {
     reason: string;
     timestamp: Date;
   }): Promise<void> {
-    await this.rabbitMQService.publish('wallet.transfer.failed', {
-      eventType: 'TransferFailedEvent',
+    await this.rabbitMQService.publish(RABBITMQ_ROUTING_KEYS.TRANSFER_FAILED, {
+      eventType: EVENT_TYPES.TRANSFER_FAILED,
       data,
       publishedAt: new Date().toISOString(),
     });
-    this.logger.log(`Published TransferFailedEvent for saga ${data.sagaId}`);
+    this.logger.log(`Published ${EVENT_TYPES.TRANSFER_FAILED} for saga ${data.sagaId}`);
   }
 
   async publishCompensationInitiated(data: {
@@ -125,12 +125,12 @@ export class EventPublisherService {
     reason: string;
     timestamp: Date;
   }): Promise<void> {
-    await this.rabbitMQService.publish('wallet.transfer.compensation.initiated', {
-      eventType: 'CompensationInitiatedEvent',
+    await this.rabbitMQService.publish(RABBITMQ_ROUTING_KEYS.COMPENSATION_INITIATED, {
+      eventType: EVENT_TYPES.COMPENSATION_INITIATED,
       data,
       publishedAt: new Date().toISOString(),
     });
-    this.logger.log(`Published CompensationInitiatedEvent for saga ${data.sagaId}`);
+    this.logger.log(`Published ${EVENT_TYPES.COMPENSATION_INITIATED} for saga ${data.sagaId}`);
   }
 
   async publishSourceWalletRefunded(data: {
@@ -141,12 +141,12 @@ export class EventPublisherService {
     timestamp: Date;
     balanceAfter: number;
   }): Promise<void> {
-    await this.rabbitMQService.publish('wallet.transfer.source.refunded', {
-      eventType: 'SourceWalletRefundedEvent',
+    await this.rabbitMQService.publish(RABBITMQ_ROUTING_KEYS.SOURCE_REFUNDED, {
+      eventType: EVENT_TYPES.SOURCE_WALLET_REFUNDED,
       data,
       publishedAt: new Date().toISOString(),
     });
-    this.logger.log(`Published SourceWalletRefundedEvent for saga ${data.sagaId}`);
+    this.logger.log(`Published ${EVENT_TYPES.SOURCE_WALLET_REFUNDED} for saga ${data.sagaId}`);
   }
 
   // Keep backward compatibility - this combines the transfer into one event for read model
@@ -160,10 +160,10 @@ export class EventPublisherService {
     toBalanceAfter: number;
   }): Promise<void> {
     await this.rabbitMQService.publish(RABBITMQ_ROUTING_KEYS.MONEY_TRANSFERRED, {
-      eventType: 'MoneyTransferredEvent',
+      eventType: EVENT_TYPES.MONEY_TRANSFERRED,
       data,
       publishedAt: new Date().toISOString(),
     });
-    this.logger.log(`Published MoneyTransferredEvent from ${data.fromWalletId} to ${data.toWalletId}`);
+    this.logger.log(`Published ${EVENT_TYPES.MONEY_TRANSFERRED} from ${data.fromWalletId} to ${data.toWalletId}`);
   }
 }

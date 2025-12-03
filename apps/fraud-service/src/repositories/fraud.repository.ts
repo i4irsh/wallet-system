@@ -120,13 +120,13 @@ export class FraudRepository {
     return count;
   }
 
-  async hasRecentDeposit(walletId: string, windowMinutes: number): Promise<boolean> {
+  async hasRecentDeposit(walletId: string, windowMinutes: number, depositEventType: string): Promise<boolean> {
     const since = new Date(Date.now() - windowMinutes * 60 * 1000);
 
     const depositEvent = await this.recentEventRepository.findOne({
       where: {
         walletId,
-        eventType: 'MoneyDepositedEvent',
+        eventType: depositEventType,
         createdAt: MoreThan(since),
       },
     });

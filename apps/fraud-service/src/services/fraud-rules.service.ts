@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { Engine, Rule } from 'json-rules-engine';
+import { FRAUD_RULES, ALERT_SEVERITIES, FRAUD_ALERT_EVENT_TYPE, EVENT_TYPES } from '@app/shared';
 import { FraudRepository } from '../repositories/fraud.repository';
 
 export interface FraudEvaluationContext {
@@ -21,12 +22,6 @@ export interface FraudAlert {
 export class FraudRulesService implements OnModuleInit {
   private readonly logger = new Logger(FraudRulesService.name);
   private engine: Engine;
-
-  // Configurable thresholds
-  private readonly LARGE_TRANSACTION_THRESHOLD = 10000;
-  private readonly VELOCITY_TRANSACTION_COUNT = 5;
-  private readonly VELOCITY_TIME_WINDOW_MINUTES = 10;
-  private readonly RAPID_WITHDRAWAL_WINDOW_MINUTES = 5;
 
   constructor(private readonly fraudRepository: FraudRepository) {}
 
@@ -51,23 +46,23 @@ export class FraudRulesService implements OnModuleInit {
 
   private createLargeTransactionRule(): Rule {
     return new Rule({
-      name: 'Large Transaction Alert',
+      name: FRAUD_RULES.LARGE_TRANSACTION.NAME,
       conditions: {
         all: [
           {
             fact: 'amount',
             operator: 'greaterThan',
-            value: this.LARGE_TRANSACTION_THRESHOLD,
+            value: FRAUD_RULES.LARGE_TRANSACTION.THRESHOLD,
           },
         ],
       },
       event: {
-        type: 'fraud-alert',
+        type: FRAUD_ALERT_EVENT_TYPE,
         params: {
-          ruleId: 'large-transaction',
-          ruleName: 'Large Transaction Alert',
-          severity: 'HIGH',
-          message: `Transaction exceeds $${this.LARGE_TRANSACTION_THRESHOLD}`,
+          ruleId: FRAUD_RULES.LARGE_TRANSACTION.ID,
+          ruleName: FRAUD_RULES.LARGE_TRANSACTION.NAME,
+          severity: ALERT_SEVERITIES.HIGH,
+          message: `Transaction exceeds $${FRAUD_RULES.LARGE_TRANSACTION.THRESHOLD}`,
         },
       },
     });
@@ -75,23 +70,23 @@ export class FraudRulesService implements OnModuleInit {
 
   private createVelocityRule(): Rule {
     return new Rule({
-      name: 'High Velocity Alert',
+      name: FRAUD_RULES.HIGH_VELOCITY.NAME,
       conditions: {
         all: [
           {
             fact: 'recentTransactionCount',
             operator: 'greaterThan',
-            value: this.VELOCITY_TRANSACTION_COUNT,
+            value: FRAUD_RULES.HIGH_VELOCITY.TRANSACTION_COUNT,
           },
         ],
       },
       event: {
-        type: 'fraud-alert',
+        type: FRAUD_ALERT_EVENT_TYPE,
         params: {
-          ruleId: 'high-velocity',
-          ruleName: 'High Velocity Alert',
-          severity: 'MEDIUM',
-          message: `More than ${this.VELOCITY_TRANSACTION_COUNT} transactions in ${this.VELOCITY_TIME_WINDOW_MINUTES} minutes`,
+          ruleId: FRAUD_RULES.HIGH_VELOCITY.ID,
+          ruleName: FRAUD_RULES.HIGH_VELOCITY.NAME,
+          severity: ALERT_SEVERITIES.MEDIUM,
+          message: `More than ${FRAUD_RULES.HIGH_VELOCITY.TRANSACTION_COUNT} transactions in ${FRAUD_RULES.HIGH_VELOCITY.TIME_WINDOW_MINUTES} minutes`,
         },
       },
     });
@@ -99,7 +94,7 @@ export class FraudRulesService implements OnModuleInit {
 
   private createRapidWithdrawalRule(): Rule {
     return new Rule({
-      name: 'Rapid Withdrawal Pattern',
+      name: FRAUD_RULES.RAPID_WITHDRAWAL.NAME,
       conditions: {
         all: [
           {
@@ -115,12 +110,12 @@ export class FraudRulesService implements OnModuleInit {
         ],
       },
       event: {
-        type: 'fraud-alert',
+        type: FRAUD_ALERT_EVENT_TYPE,
         params: {
-          ruleId: 'rapid-withdrawal',
-          ruleName: 'Rapid Withdrawal Pattern',
-          severity: 'HIGH',
-          message: `Withdrawal detected within ${this.RAPID_WITHDRAWAL_WINDOW_MINUTES} minutes of deposit`,
+          ruleId: FRAUD_RULES.RAPID_WITHDRAWAL.ID,
+          ruleName: FRAUD_RULES.RAPID_WITHDRAWAL.NAME,
+          severity: ALERT_SEVERITIES.HIGH,
+          message: `Withdrawal detected within ${FRAUD_RULES.RAPID_WITHDRAWAL.TIME_WINDOW_MINUTES} minutes of deposit`,
         },
       },
     });
@@ -133,15 +128,16 @@ export class FraudRulesService implements OnModuleInit {
       // Calculate dynamic facts
       const recentTransactionCount = await this.fraudRepository.getRecentTransactionCount(
         context.walletId,
-        this.VELOCITY_TIME_WINDOW_MINUTES,
+        FRAUD_RULES.HIGH_VELOCITY.TIME_WINDOW_MINUTES,
       );
 
       const hasRecentDeposit = await this.fraudRepository.hasRecentDeposit(
         context.walletId,
-        this.RAPID_WITHDRAWAL_WINDOW_MINUTES,
+        FRAUD_RULES.RAPID_WITHDRAWAL.TIME_WINDOW_MINUTES,
+        EVENT_TYPES.MONEY_DEPOSITED,
       );
 
-      const isWithdrawal = context.eventType === 'MoneyWithdrawnEvent';
+      const isWithdrawal = context.eventType === EVENT_TYPES.MONEY_WITHDRAWN;
 
       // Set up facts for the rules engine
       const facts = {
@@ -162,7 +158,7 @@ export class FraudRulesService implements OnModuleInit {
 
       // Process triggered events
       for (const event of results.events) {
-        if (event.type === 'fraud-alert') {
+        if (event.type === FRAUD_ALERT_EVENT_TYPE) {
           const params = event.params as {
             ruleId: string;
             ruleName: string;

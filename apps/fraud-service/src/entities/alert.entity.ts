@@ -1,4 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import { TABLE_NAMES } from '@app/shared';
 
 export enum AlertSeverity {
   LOW = 'LOW',
@@ -7,7 +8,7 @@ export enum AlertSeverity {
   CRITICAL = 'CRITICAL',
 }
 
-@Entity('alerts')
+@Entity(TABLE_NAMES.ALERTS)
 export class AlertEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;

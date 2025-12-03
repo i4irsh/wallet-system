@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { RabbitMQModule, fraudServiceConfigSchema, ENV } from '@app/shared';
+import { RabbitMQModule, fraudServiceConfigSchema, ENV, RABBITMQ_EXCHANGES, RABBITMQ_QUEUES } from '@app/shared';
 import { AlertEntity, RiskProfileEntity, RecentEventEntity } from './entities';
 import { FraudEventConsumer } from './consumers/fraud-event.consumer';
 import { FraudRulesService } from './services/fraud-rules.service';
@@ -37,9 +37,9 @@ import { FraudRepository } from './repositories/fraud.repository';
         port: configService.get<number>(ENV.RABBITMQ_PORT)!,
         username: configService.get<string>(ENV.RABBITMQ_USER)!,
         password: configService.get<string>(ENV.RABBITMQ_PASSWORD)!,
-        exchange: 'wallet.events',
-        queue: 'fraud.events.queue',
-        deadLetterQueue: 'fraud.events.dlq',
+        exchange: RABBITMQ_EXCHANGES.WALLET_EVENTS,
+        queue: RABBITMQ_QUEUES.FRAUD_EVENTS,
+        deadLetterQueue: RABBITMQ_QUEUES.FRAUD_EVENTS_DLQ,
       }),
       inject: [ConfigService],
     }),

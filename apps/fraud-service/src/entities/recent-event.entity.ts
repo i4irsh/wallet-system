@@ -1,6 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import { TABLE_NAMES } from '@app/shared';
 
-@Entity('recent_events')
+@Entity(TABLE_NAMES.RECENT_EVENTS)
 export class RecentEventEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;

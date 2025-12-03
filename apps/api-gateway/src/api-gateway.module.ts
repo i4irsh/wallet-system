@@ -10,6 +10,7 @@ import {
   ENV,
   IDEMPOTENCY_TTL_SECONDS,
   IDEMPOTENCY_KEY_PREFIX,
+  MICROSERVICE_TOKENS,
 } from '@app/shared';
 import { ApiGatewayController } from './api-gateway.controller';
 
@@ -24,7 +25,7 @@ import { ApiGatewayController } from './api-gateway.controller';
     }),
     ClientsModule.registerAsync([
       {
-        name: 'COMMAND_SERVICE',
+        name: MICROSERVICE_TOKENS.COMMAND_SERVICE,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.TCP,
           options: {
@@ -35,7 +36,7 @@ import { ApiGatewayController } from './api-gateway.controller';
         inject: [ConfigService],
       },
       {
-        name: 'QUERY_SERVICE',
+        name: MICROSERVICE_TOKENS.QUERY_SERVICE,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.TCP,
           options: {
