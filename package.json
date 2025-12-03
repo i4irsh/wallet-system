@@ -27,7 +27,8 @@
     "test:integration:concurrency": "jest --testPathPatterns=tests/concurrency\\.spec\\.ts$ --runInBand",
     "test:integration:idempotency": "jest --testPathPatterns=tests/idempotency\\.spec\\.ts$ --runInBand",
     "test:integration:fraud": "jest --testPathPatterns=tests/fraud\\.spec\\.ts$ --runInBand",
-    "test:integration:saga": "jest --testPathPatterns=tests/transfer-saga\\.spec\\.ts$ --runInBand"
+    "test:integration:saga": "jest --testPathPatterns=tests/transfer-saga\\.spec\\.ts$ --runInBand",
+    "test:load": "k6 run deposit-load-test.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
