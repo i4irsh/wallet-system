@@ -737,11 +737,102 @@ wallet-system/
 | Transfer Saga | ✅ | Saga pattern with compensation for distributed transfer transactions |
 | Idempotency | ✅ | Redis-based idempotency with `x-idempotency-key` header, guard + interceptor pattern |
 | Fraud Detection | ✅ | Real-time fraud analysis with json-rules-engine, risk profiles, and alerts |
+| Test Suite | ✅ | Integration tests (API, concurrency, fraud, idempotency, saga, load) + unit tests |
 
 ### ⏳ Pending
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
 | Snapshots | ⏳ | Need snapshot table for aggregate performance |
-| Test Suite | ⏳ | Need comprehensive tests |
+
+---
+
+## Test Suite
+
+### Running Tests
+
+```bash
+# Run all integration tests
+npm run test:integration
+
+# Run specific test suites
+npm run test:integration:wallet-api      # Core API tests
+npm run test:integration:concurrency     # Double-spend prevention
+npm run test:integration:fraud           # Fraud detection
+npm run test:integration:idempotency     # Idempotency handling
+npm run test:integration:saga            # Transfer saga
+```
+
+**Prerequisites:** All services must be running (`npm run start:dev:all`)
+
+### Test Categories
+
+#### 1. Wallet API Integration Tests (`tests/wallet-api.spec.ts`)
+
+Tests core wallet API endpoints and their behavior.
+
+| Test Area | Description |
+|-----------|-------------|
+| **POST /deposit** | Basic deposits, decimal amounts, validation, edge cases |
+| **POST /withdraw** | Basic withdrawals, insufficient funds handling, validation |
+| **GET /balance/:walletId** | Balance queries, non-existent wallets, read consistency |
+| **GET /transactions/:walletId** | Transaction history, ordering, field validation |
+| **Wallet Lifecycle** | Complete create → deposit → withdraw → check flow |
+| **Health Check** | Service ping endpoint validation |
+
+#### 2. Concurrency Tests (`tests/concurrency.spec.ts`)
+
+Tests double-spend prevention and optimistic locking.
+
+| Test Scenario | Expected Behavior |
+|---------------|-------------------|
+| Concurrent withdraw + transfer with $100 balance | Only ONE operation succeeds, balance ≥ 0 |
+| 5 concurrent $100 withdrawals with $100 balance | Only ONE succeeds, no overdraft |
+| 10 concurrent mixed operations with $500 balance | Balance ≥ 0, no money created/destroyed |
+| Sequential vs concurrent withdrawals | Sequential both succeed; concurrent uses optimistic locking |
+| Bidirectional transfers (A→B and B→A) | No deadlock, money conserved |
+| 3-way circular transfers (A→B→C→A) | No deadlock, total money conserved |
+
+#### 3. Idempotency Tests (`tests/idempotency.spec.ts`)
+
+Tests Redis-based idempotency handling.
+
+| Test Scenario | Expected Behavior |
+|---------------|-------------------|
+| Missing idempotency key | Returns 400 Bad Request |
+| Duplicate request with same key | Returns cached response with `_cached: true` |
+| Different idempotency keys | Processes independently |
+| Double withdraw prevention | Cached response, balance unchanged |
+| Double transfer prevention | Cached response, balances unchanged |
+| Rapid duplicate requests (5 concurrent) | Exactly 1 processed, 4 cached/conflict |
+| Cross-endpoint key reuse | Returns cached response from original endpoint |
+
+#### 4. Transfer Saga Tests (`tests/transfer-saga.spec.ts`)
+
+Tests the saga pattern for atomic multi-wallet transfers.
+
+| Test Area | Description |
+|-----------|-------------|
+| **Happy Path** | Successful transfers, balance updates, non-existent destination wallet handling |
+| **Insufficient Funds** | Fails gracefully, destination wallet unchanged |
+| **Self Transfer** | Handles gracefully, balance unchanged |
+| **Multiple Transfers** | Sequential transfers (A→B→C) maintain consistency |
+| **Edge Cases** | Zero amount, negative amount, very large amounts |
+| **Idempotency** | Duplicate transfers with same key return cached response |
+| **Rollback & Compensation** | Source wallet refunded on failure, money conservation verified |
+
+#### 5. Fraud Detection Tests (`tests/fraud.spec.ts`)
+
+Tests fraud rules, risk scoring, and event consumer idempotency.
+
+| Test Area | Description |
+|-----------|-------------|
+| **Large Transaction Alert** | Amount > $10,000 triggers HIGH severity alert |
+| **Velocity Alert** | > 5 transactions in 10 min triggers MEDIUM severity |
+| **Rapid Withdrawal Alert** | Withdrawal within 5 min of deposit triggers HIGH severity |
+| **Risk Score Accumulation** | Multiple alerts increase score; risk level escalates |
+| **No Alert for Normal Tx** | Transactions < $10,000 don't trigger fraud alerts |
+| **Consumer Idempotency** | Duplicate API requests don't create duplicate alerts |
+| **Risk Score Idempotency** | Duplicates don't double-count risk scores |
+| **Transaction ID Deduplication** | Alerts associated with correct transaction IDs |
 

@@ -20,11 +20,14 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./apps/wallet-system/test/jest-e2e.json",
-    "test:concurrency": "npx ts-node tests/concurrency.test.ts",
-    "test:transfer-saga": "npx ts-node tests/transfer-saga.test.ts",
-    "test:idempotency": "npx ts-node tests/idempotency.test.ts",
-    "test:fraud": "npx ts-node tests/fraud.test.ts"
+    "test:unit": "jest --testPathPatterns=\\.spec\\.ts$ --testPathIgnorePatterns=tests/",
+    "test:unit:saga": "jest --testPathPatterns=transfer-saga\\.service\\.spec\\.ts$",
+    "test:integration": "jest --testPathPatterns=tests/.*\\.spec\\.ts$ --runInBand",
+    "test:integration:wallet-api": "jest --testPathPatterns=tests/wallet-api\\.spec\\.ts$ --runInBand",
+    "test:integration:concurrency": "jest --testPathPatterns=tests/concurrency\\.spec\\.ts$ --runInBand",
+    "test:integration:idempotency": "jest --testPathPatterns=tests/idempotency\\.spec\\.ts$ --runInBand",
+    "test:integration:fraud": "jest --testPathPatterns=tests/fraud\\.spec\\.ts$ --runInBand",
+    "test:integration:saga": "jest --testPathPatterns=tests/transfer-saga\\.spec\\.ts$ --runInBand"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -83,16 +86,23 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "apps/**/*.(t|j)s",
+      "libs/**/*.(t|j)s",
+      "!**/*.spec.ts",
+      "!**/*.module.ts",
+      "!**/main.ts",
+      "!**/index.ts"
     ],
     "coverageDirectory": "./coverage",
     "testEnvironment": "node",
     "roots": [
       "<rootDir>/apps/",
-      "<rootDir>/libs/"
+      "<rootDir>/libs/",
+      "<rootDir>/tests/"
     ],
     "moduleNameMapper": {
       "^@app/shared(|/.*)$": "<rootDir>/libs/shared/src/$1"
-    }
+    },
+    "testTimeout": 30000
   }
 }
