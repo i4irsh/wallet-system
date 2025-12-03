@@ -95,12 +95,22 @@ This starts all 4 services (Command, Query, Fraud, API Gateway) concurrently
 ### 6. Verify Services
 
 ```bash
-curl http://localhost:3000/wallet/ping
+curl http://localhost:3000/ping
 ```
 
 Expected output:
 ```json
 {"commandService":"pong from command-service","queryService":"pong from query-service"}
+```
+
+---
+
+## API Documentation
+
+API documentation is available via Swagger UI:
+
+```
+http://localhost:3000/api
 ```
 
 ---
@@ -116,31 +126,36 @@ Expected output:
 | GET | `/transactions/:walletId` | Query | Get transaction history |
 | GET | `/ping` | Both | Health check both services |
 
+> **Note:** All write operations (deposit, withdraw, transfer) require an `x-idempotency-key` header for exactly-once semantics.
+
 ---
 
 ## Usage Examples
 
 ```bash
 # Deposit
-curl -X POST http://localhost:3000/wallet/deposit \
+curl -X POST http://localhost:3000/deposit \
   -H "Content-Type: application/json" \
+  -H "x-idempotency-key: $(uuidgen)" \
   -d '{"walletId": "wallet-123", "amount": 100}'
 
 # Withdraw
-curl -X POST http://localhost:3000/wallet/withdraw \
+curl -X POST http://localhost:3000/withdraw \
   -H "Content-Type: application/json" \
+  -H "x-idempotency-key: $(uuidgen)" \
   -d '{"walletId": "wallet-123", "amount": 30}'
 
 # Transfer
-curl -X POST http://localhost:3000/wallet/transfer \
+curl -X POST http://localhost:3000/transfer \
   -H "Content-Type: application/json" \
+  -H "x-idempotency-key: $(uuidgen)" \
   -d '{"fromWalletId": "wallet-123", "toWalletId": "wallet-456", "amount": 20}'
 
 # Get Balance
-curl http://localhost:3000/wallet/balance/wallet-123
+curl http://localhost:3000/balance/wallet-123
 
 # Get Transactions
-curl http://localhost:3000/wallet/transactions/wallet-123
+curl http://localhost:3000/transactions/wallet-123
 ```
 
 ---
