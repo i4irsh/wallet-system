@@ -417,11 +417,6 @@ describe('Transfer Saga Tests', () => {
       // Count successes - at most 2 should succeed (2 * 400 = 800, leaving 200)
       const successCount = transfers.filter((r) => r.status === 201 && r.data.success).length;
       expect(successCount).toBeLessThanOrEqual(2);
-
-      console.log(
-        `Concurrent transfers: ${successCount}/3 succeeded, ` +
-          `From: $${fromBalance}, To: $${toBalance}, Total: $${totalAfter}`,
-      );
     });
 
     it('should handle compensation idempotently for failed transfers', async () => {
