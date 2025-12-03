@@ -1,8 +1,59 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "src",
+  "sourceRoot": "apps/api-gateway/src",
   "compilerOptions": {
-    "deleteOutDir": true
+    "deleteOutDir": true,
+    "webpack": true,
+    "tsConfigPath": "apps/api-gateway/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/api-gateway",
+  "projects": {
+    "api-gateway": {
+      "type": "application",
+      "root": "apps/api-gateway",
+      "entryFile": "main",
+      "sourceRoot": "apps/api-gateway/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/api-gateway/tsconfig.app.json"
+      }
+    },
+    "command-service": {
+      "type": "application",
+      "root": "apps/command-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/command-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/command-service/tsconfig.app.json"
+      }
+    },
+    "query-service": {
+      "type": "application",
+      "root": "apps/query-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/query-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/query-service/tsconfig.app.json"
+      }
+    },
+    "shared": {
+      "type": "library",
+      "root": "libs/shared",
+      "entryFile": "index",
+      "sourceRoot": "libs/shared/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/shared/tsconfig.lib.json"
+      }
+    },
+    "fraud-service": {
+      "type": "application",
+      "root": "apps/fraud-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/fraud-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/fraud-service/tsconfig.app.json"
+      }
+    }
   }
 }

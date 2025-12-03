@@ -1,0 +1,45 @@
+# Test connectivity
+GET http://localhost:3000/ping
+
+###
+# Test deposit command
+
+POST http://localhost:3000/deposit
+Content-Type: application/json
+x-idempotency-key: 1234567890
+
+{ 
+    "walletId": "wallet-123", 
+    "amount": 100
+}
+
+###
+# Test withdraw command
+
+POST http://localhost:3000/withdraw
+Content-Type: application/json
+
+{ 
+    "walletId": "wallet-123", 
+    "amount": 50
+}
+
+###
+# Test transfer command
+
+POST http://localhost:3000/transfer
+Content-Type: application/json
+
+{ 
+    "fromWalletId": "wallet-123", 
+    "toWalletId": "wallet-456", 
+    "amount": 25
+}
+
+###
+# Test balance query
+GET http://localhost:3000/balance/wallet-123
+
+###
+# Test transactions query
+GET http://localhost:3000/transactions/wallet-123

@@ -1,98 +1,207 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Wallet System
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+An event-driven distributed Wallet Microservice built using **NestJS microservices** with **CQRS** and **Event Sourcing** patterns.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Features
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **Deposit** - Add funds to a wallet
+- **Withdraw** - Remove funds from a wallet
+- **Transfer** - Move funds between wallets
+- **Balance** - Query current wallet balance
+- **History** - View transaction history
+- **Fraud Detection** - Real-time fraud analysis with configurable rules
 
-## Project setup
+---
 
-```bash
-$ pnpm install
-```
+## Technical Documentation
 
-## Compile and run the project
+- [DESIGN.md](./DESIGN.md) - Technical architecture, patterns, and implementation details
 
-```bash
-# development
-$ pnpm run start
+---
 
-# watch mode
-$ pnpm run start:dev
 
-# production mode
-$ pnpm run start:prod
-```
+## Technology Stack
 
-## Run tests
+| Layer | Technology |
+|-------|------------|
+| Framework | NestJS |
+| Message Broker | RabbitMQ 3.13 |
+| Database | PostgreSQL 16 |
+| ORM | TypeORM |
+| CQRS | @nestjs/cqrs |
+| Language | TypeScript |
+| Container | Docker Compose |
 
-```bash
-# unit tests
-$ pnpm run test
 
-# e2e tests
-$ pnpm run test:e2e
+---
 
-# test coverage
-$ pnpm run test:cov
-```
+## Prerequisites
 
-## Deployment
+- Node.js 18+
+- Docker & Docker Compose
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+---
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+
+## Setup Instructions
+
+### 1. Clone the Repository
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+git clone https://github.com/i4irsh/wallet-system.git
+cd wallet-system
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### 2. Install Dependencies
 
-## Resources
+```bash
+npm install
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+### 3. Configure Environment
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```bash
+cp env.sample .env
+```
 
-## Support
+Review and modify `.env` if needed (defaults work with docker-compose).
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### 4. Start Infrastructure
 
-## Stay in touch
+```bash
+docker-compose up -d
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+This starts:
+- PostgreSQL (Write) on port 5432 - Event store database
+- PostgreSQL (Read) on port 5433 - Read model projections database
+- PostgreSQL (Fraud) on port 5434 - Fraud detection database
+- RabbitMQ on port 5672 (AMQP) and 15672 (Management UI)
+- Redis on port 6379 - Idempotency key storage
 
-## License
+**RabbitMQ Management UI:**
+Open http://localhost:15672 (credentials: wallet_user / wallet_password)
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+### 5. Start Services
+
+```bash
+npm run start:dev:all
+```
+
+This starts all 4 services (Command, Query, Fraud, API Gateway) concurrently
+
+### 6. Verify Services
+
+```bash
+curl http://localhost:3000/ping
+```
+
+Expected output:
+```json
+{"commandService":"pong from command-service","queryService":"pong from query-service"}
+```
+
+---
+
+## API Documentation
+
+API documentation is available via Swagger UI:
+
+```
+http://localhost:3000/api
+```
+
+---
+
+## API Reference
+
+| Method | Endpoint | Service | Description |
+|--------|----------|---------|-------------|
+| POST | `/deposit` | Command | Deposit funds to wallet |
+| POST | `/withdraw` | Command | Withdraw funds from wallet |
+| POST | `/transfer` | Command | Transfer between wallets |
+| GET | `/balance/:walletId` | Query | Get current wallet balance |
+| GET | `/transactions/:walletId` | Query | Get transaction history |
+| GET | `/ping` | Both | Health check both services |
+
+> **Note:** All write operations (deposit, withdraw, transfer) require an `x-idempotency-key` header for exactly-once semantics.
+
+---
+
+## Usage Examples
+
+```bash
+# Deposit
+curl -X POST http://localhost:3000/deposit \
+  -H "Content-Type: application/json" \
+  -H "x-idempotency-key: $(uuidgen)" \
+  -d '{"walletId": "wallet-123", "amount": 100}'
+
+# Withdraw
+curl -X POST http://localhost:3000/withdraw \
+  -H "Content-Type: application/json" \
+  -H "x-idempotency-key: $(uuidgen)" \
+  -d '{"walletId": "wallet-123", "amount": 30}'
+
+# Transfer
+curl -X POST http://localhost:3000/transfer \
+  -H "Content-Type: application/json" \
+  -H "x-idempotency-key: $(uuidgen)" \
+  -d '{"fromWalletId": "wallet-123", "toWalletId": "wallet-456", "amount": 20}'
+
+# Get Balance
+curl http://localhost:3000/balance/wallet-123
+
+# Get Transactions
+curl http://localhost:3000/transactions/wallet-123
+```
+
+---
+
+## Database Access
+
+```bash
+# Connect to Write Database (Event Store)
+docker exec -it wallet-postgres-write psql -U wallet_user -d wallet_write_db
+
+# View events
+SELECT * FROM event_store ORDER BY id;
+```
+
+```bash
+# Connect to Read Database (Projections)
+docker exec -it wallet-postgres-read psql -U wallet_user -d wallet_read_db
+
+# View wallet balances
+SELECT * FROM wallet_read_model;
+
+# View transactions
+SELECT * FROM transaction_read_model ORDER BY timestamp;
+```
+
+```bash
+# Connect to Fraud Database
+docker exec -it wallet-postgres-fraud psql -U wallet_user -d wallet_fraud_db
+
+# View fraud alerts
+SELECT * FROM alerts ORDER BY created_at DESC;
+
+# View risk profiles
+SELECT * FROM risk_profiles;
+```
+
+---
+
+## Stopping the System
+
+```bash
+# Stop services (Ctrl+C in each terminal)
+
+# Stop infrastructure (PostgreSQL + RabbitMQ)
+docker-compose down
+
+# Stop and remove all data (databases + message queues)
+docker-compose down -v
+```
