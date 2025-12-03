@@ -8,3 +8,4 @@ export * from './read-models';
 export * from './rabbitmq';
 export * from './saga';
 export * from './idempotency';
+export * from './config';

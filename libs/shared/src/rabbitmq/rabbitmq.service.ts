@@ -18,9 +18,14 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     await this.disconnect();
   }
 
+  private getConnectionUrl(): string {
+    const { host, port, username, password } = this.config;
+    return `amqp://${username}:${password}@${host}:${port}`;
+  }
+
   private async connect(): Promise<void> {
     try {
-      this.connection = await amqp.connect(this.config.url);
+      this.connection = await amqp.connect(this.getConnectionUrl());
       this.channel = await this.connection.createChannel();
 
       // Set up Dead Letter Exchange

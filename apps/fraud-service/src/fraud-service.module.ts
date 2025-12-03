@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { RabbitMQModule, getFraudRabbitMQConfig } from '@app/shared';
+import { RabbitMQModule, fraudServiceConfigSchema, ENV } from '@app/shared';
 import { AlertEntity, RiskProfileEntity, RecentEventEntity } from './entities';
 import { FraudEventConsumer } from './consumers/fraud-event.consumer';
 import { FraudRulesService } from './services/fraud-rules.service';
@@ -9,18 +10,39 @@ import { FraudRepository } from './repositories/fraud.repository';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: process.env.DB_FRAUD_HOST || 'localhost',
-      port: parseInt(process.env.DB_FRAUD_PORT!, 10) || 5434,
-      username: process.env.DB_FRAUD_USERNAME || 'wallet_user',
-      password: process.env.DB_FRAUD_PASSWORD || 'wallet_password',
-      database: process.env.DB_FRAUD_DATABASE || 'wallet_fraud_db',
-      entities: [AlertEntity, RiskProfileEntity, RecentEventEntity],
-      synchronize: false,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validationSchema: fraudServiceConfigSchema,
+      validationOptions: {
+        abortEarly: true,
+      },
+    }),
+    TypeOrmModule.forRootAsync({
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get<string>(ENV.DB_FRAUD_HOST),
+        port: configService.get<number>(ENV.DB_FRAUD_PORT),
+        username: configService.get<string>(ENV.DB_FRAUD_USERNAME),
+        password: configService.get<string>(ENV.DB_FRAUD_PASSWORD),
+        database: configService.get<string>(ENV.DB_FRAUD_DATABASE),
+        entities: [AlertEntity, RiskProfileEntity, RecentEventEntity],
+        synchronize: false,
+      }),
+      inject: [ConfigService],
     }),
     TypeOrmModule.forFeature([AlertEntity, RiskProfileEntity, RecentEventEntity]),
-    RabbitMQModule.forRoot(getFraudRabbitMQConfig()),
+    RabbitMQModule.forRootAsync({
+      useFactory: (configService: ConfigService) => ({
+        host: configService.get<string>(ENV.RABBITMQ_HOST)!,
+        port: configService.get<number>(ENV.RABBITMQ_PORT)!,
+        username: configService.get<string>(ENV.RABBITMQ_USER)!,
+        password: configService.get<string>(ENV.RABBITMQ_PASSWORD)!,
+        exchange: 'wallet.events',
+        queue: 'fraud.events.queue',
+        deadLetterQueue: 'fraud.events.dlq',
+      }),
+      inject: [ConfigService],
+    }),
   ],
   providers: [FraudEventConsumer, FraudRulesService, RiskProfileService, FraudRepository],
 })

@@ -60,7 +60,15 @@ cd wallet-system
 npm install
 ```
 
-### 3. Start Infrastructure
+### 3. Configure Environment
+
+```bash
+cp env.sample .env
+```
+
+Review and modify `.env` if needed (defaults work with docker-compose).
+
+### 4. Start Infrastructure
 
 ```bash
 docker-compose up -d
@@ -76,25 +84,15 @@ This starts:
 **RabbitMQ Management UI:**
 Open http://localhost:15672 (credentials: wallet_user / wallet_password)
 
-### 4. Start Services
-
-Open 4 terminal windows:
+### 5. Start Services
 
 ```bash
-# Terminal 1 - Command Service
-npm run start:dev command-service
-
-# Terminal 2 - Query Service
-npm run start:dev query-service
-
-# Terminal 3 - Fraud Service
-npm run start:dev fraud-service
-
-# Terminal 4 - API Gateway
-npm run start:dev api-gateway
+npm run start:dev:all
 ```
 
-### 5. Verify Services
+This starts all 4 services (Command, Query, Fraud, API Gateway) concurrently
+
+### 6. Verify Services
 
 ```bash
 curl http://localhost:3000/wallet/ping
